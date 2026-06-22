@@ -12,6 +12,9 @@ import { MySchedulePage } from "./pages/MySchedulePage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { CashboxPage } from "./pages/CashboxPage";
 import { PaymentMethodsPage } from "./pages/PaymentMethodsPage";
+import { WhatsAppPage } from "./pages/WhatsAppPage";
+import { BookingLinkPage } from "./pages/BookingLinkPage";
+import { PublicBookingPage } from "./pages/PublicBookingPage";
 import { AdminBusinessesPage } from "./pages/admin/AdminBusinessesPage";
 
 const queryClient = new QueryClient();
@@ -22,6 +25,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/reservar/:slug" element={<PublicBookingPage />} />
 
           <Route element={<ProtectedRoute allowedRoles={["owner", "manager", "barber"]} />}>
             <Route element={<AppLayout />}>
@@ -34,6 +38,8 @@ export default function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/caja" element={<CashboxPage />} />
               <Route path="/metodos-de-pago" element={<PaymentMethodsPage />} />
+              <Route path="/whatsapp" element={<WhatsAppPage />} />
+              <Route path="/enlace-de-reservas" element={<BookingLinkPage />} />
               <Route path="/sedes" element={<LocationsPage />} />
               <Route path="/barberos" element={<BarbersPage />} />
               <Route path="/clientes" element={<ClientsPage />} />

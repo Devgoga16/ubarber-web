@@ -12,6 +12,8 @@ import {
   AlertTriangle,
   Wallet,
   CreditCard,
+  MessageCircle,
+  Link as LinkIcon,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useAuthStore } from "../../store/auth";
@@ -36,6 +38,8 @@ const ownerNavItems: NavItem[] = [
   { to: "/barberos", label: "Barberos", icon: Scissors },
   { to: "/clientes", label: "Clientes", icon: Users, mobile: false },
   { to: "/servicios", label: "Servicios", icon: Tag, mobile: false },
+  { to: "/whatsapp", label: "WhatsApp", icon: MessageCircle, mobile: false },
+  { to: "/enlace-de-reservas", label: "Enlace de reservas", icon: LinkIcon, mobile: false },
 ];
 
 // El barbero solo ve su propia agenda y su propio horario — nada de gestión del negocio.

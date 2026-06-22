@@ -2,10 +2,17 @@ import { useMemo, useState } from "react";
 import { Search, Star, Tag, Check } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { formatCurrency } from "../../lib/format";
-import type { Service } from "../../api/types";
+
+interface PickableService {
+  _id: string;
+  name: string;
+  durationMinutes: number;
+  priceCents: number;
+  photo?: string;
+}
 
 interface ServicePickerProps {
-  services: Service[];
+  services: PickableService[];
   selectedIds: string[];
   onToggleSelect: (id: string) => void;
   favoriteIds: string[];
