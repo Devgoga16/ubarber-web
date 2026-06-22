@@ -2,8 +2,12 @@ import axios from "axios";
 import { useAuthStore } from "../store/auth";
 import { useSubscriptionGateStore } from "../store/subscriptionGate";
 
+// En producción la URL real se inyecta en runtime (ver docker-entrypoint.sh -> env-config.js),
+// porque las variables VITE_* de Vite quedan fijas en el bundle desde el momento del build.
+const runtimeApiUrl = (window as { __ENV__?: { VITE_API_URL?: string } }).__ENV__?.VITE_API_URL;
+
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:4000/api",
+  baseURL: runtimeApiUrl || import.meta.env.VITE_API_URL || "http://localhost:4000/api",
 });
 
 apiClient.interceptors.request.use((config) => {
