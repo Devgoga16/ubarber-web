@@ -1,0 +1,110 @@
+export interface Location {
+  _id: string;
+  name: string;
+  address?: string;
+  phone?: string;
+  isActive: boolean;
+}
+
+export interface Service {
+  _id: string;
+  name: string;
+  durationMinutes: number;
+  priceCents: number;
+  locationIds: string[];
+  photo?: string;
+  isActive: boolean;
+}
+
+export interface Client {
+  _id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  notes?: string;
+  isActive: boolean;
+}
+
+export interface Barber {
+  _id: string;
+  userId: { _id: string; name: string; email: string; isActive: boolean } | string;
+  locationIds: string[];
+  specialties: string[];
+  commissionPercentage?: number;
+  favoriteServiceIds: string[];
+  isActive: boolean;
+}
+
+export type AppointmentStatus = "pending" | "in_progress" | "completed" | "cancelled" | "no_show";
+
+export interface PaymentMethod {
+  _id: string;
+  name: string;
+  isActive: boolean;
+}
+
+export interface Appointment {
+  _id: string;
+  locationId: string;
+  barberId: string;
+  clientId: { _id: string; name: string; phone: string } | string;
+  serviceIds: { _id: string; name: string; durationMinutes: number; priceCents: number }[] | string[];
+  startsAt: string;
+  endsAt: string;
+  status: AppointmentStatus;
+  totalPriceCents: number;
+  paid: boolean;
+  paidAt?: string;
+  paymentMethodId?: { _id: string; name: string } | string;
+  receiptPhoto?: string;
+  notes?: string;
+}
+
+export interface Plan {
+  _id: string;
+  name: string;
+  description?: string;
+  priceCents: number;
+  billingPeriod: "monthly" | "yearly";
+  limits: { maxLocations: number; maxBarbers: number; maxAppointmentsPerMonth: number };
+  features: string[];
+  isActive: boolean;
+}
+
+export type SubscriptionStatus = "trial" | "active" | "past_due" | "suspended" | "cancelled";
+
+export interface Subscription {
+  _id: string;
+  businessId: string;
+  planId: Plan | string;
+  status: SubscriptionStatus;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+}
+
+export interface DashboardStats {
+  todayAppointmentsCount: number;
+  todayAppointmentsDelta: number;
+  activeClientsCount: number;
+  todayRevenueCents: number;
+  todayRevenueDeltaCents: number;
+  pendingCount: number;
+  pendingDelta: number;
+  recentAppointments: Appointment[];
+  popularServices: {
+    serviceId: string;
+    name: string;
+    priceCents: number;
+    count: number;
+    percentage: number;
+  }[];
+}
+
+export interface Business {
+  _id: string;
+  name: string;
+  ownerName: string;
+  ownerEmail: string;
+  phone?: string;
+  subscription: Subscription | null;
+}
