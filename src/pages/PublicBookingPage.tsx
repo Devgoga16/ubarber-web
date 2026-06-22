@@ -1,16 +1,27 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { Scissors, CheckCircle2, CalendarDays, MapPin } from "lucide-react";
+import { Scissors, CheckCircle2, CalendarDays, MapPin, Camera, ShieldCheck } from "lucide-react";
 import {
   usePublicBusiness,
   usePublicAvailability,
   useCreatePublicAppointment,
+  computeRequiredDepositCents,
 } from "../hooks/usePublicBooking";
 import { ServicePicker } from "../components/agenda/ServicePicker";
 import { Field, Input } from "../components/ui/Field";
 import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
 import { cn } from "../lib/utils";
+import { formatCurrency } from "../lib/format";
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 function toDateInputValue(date: Date) {
   const year = date.getFullYear();
@@ -34,8 +45,12 @@ export function PublicBookingPage() {
   const [time, setTime] = useState("");
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const [knowsBusiness, setKnowsBusiness] = useState<"yes" | "no" | null>(null);
+  const [trustCode, setTrustCode] = useState("");
+  const [depositProofPhoto, setDepositProofPhoto] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const locations = data?.locations ?? [];
   const services = data?.services ?? [];
@@ -65,8 +80,32 @@ export function PublicBookingPage() {
     setTime("");
   }
 
+  const selectedServices = services.filter((s) => serviceIds.includes(s._id));
+  const requiredDepositCents = data?.deposit
+    ? computeRequiredDepositCents(data.deposit, selectedServices)
+    : 0;
+  const needsDepositStep = requiredDepositCents > 0;
+
+  const depositResolved =
+    !needsDepositStep ||
+    (knowsBusiness === "yes" && trustCode.trim().length > 0) ||
+    (knowsBusiness === "no" && Boolean(depositProofPhoto));
+
+  async function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setDepositProofPhoto(await readFileAsDataUrl(file));
+  }
+
   const canSubmit =
-    locationId && barberId && serviceIds.length > 0 && date && time && clientName && clientPhone;
+    locationId &&
+    barberId &&
+    serviceIds.length > 0 &&
+    date &&
+    time &&
+    clientName &&
+    clientPhone &&
+    depositResolved;
 
   async function handleSubmit() {
     setError(null);
@@ -81,6 +120,11 @@ export function PublicBookingPage() {
         serviceIds,
         startsAt: startsAt.toISOString(),
         client: { name: clientName, phone: clientPhone },
+        ...(needsDepositStep
+          ? knowsBusiness === "yes"
+            ? { depositMethod: "trust_code" as const, trustCode }
+            : { depositMethod: "proof_photo" as const, depositProofPhoto }
+          : {}),
       });
       setDone(true);
     } catch (err: any) {
@@ -125,10 +169,12 @@ export function PublicBookingPage() {
               <CheckCircle2 className="h-7 w-7 text-success" />
             </div>
             <h2 className="font-heading mb-1 text-lg font-semibold text-primary">
-              ¡Tu cita quedó agendada!
+              {needsDepositStep ? "¡Solicitud enviada!" : "¡Tu cita quedó agendada!"}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Te llegará un recordatorio por WhatsApp antes de tu cita.
+              {needsDepositStep
+                ? "El barbero debe confirmar disponibilidad. Te avisamos por WhatsApp en cuanto se confirme."
+                : "Te llegará un recordatorio por WhatsApp antes de tu cita."}
             </p>
           </div>
         )}
@@ -235,6 +281,87 @@ export function PublicBookingPage() {
                   </div>
                 )}
               </Field>
+            )}
+
+            {needsDepositStep && (
+              <div className="flex flex-col gap-3 rounded-2xl border border-accent/30 bg-accent/5 p-4">
+                <div>
+                  <p className="text-sm font-medium text-primary">
+                    Esta cita requiere un adelanto de {formatCurrency(requiredDepositCents)}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    ¿La barbería ya te conoce? Pídele el código y paga una vez finalizado el corte.
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setKnowsBusiness("yes")}
+                    className={cn(
+                      "flex-1 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors",
+                      knowsBusiness === "yes"
+                        ? "border-accent bg-accent/10 text-accent"
+                        : "border-border text-muted-foreground"
+                    )}
+                  >
+                    Sí, tengo el código
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setKnowsBusiness("no")}
+                    className={cn(
+                      "flex-1 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors",
+                      knowsBusiness === "no"
+                        ? "border-accent bg-accent/10 text-accent"
+                        : "border-border text-muted-foreground"
+                    )}
+                  >
+                    No, voy a pagar el adelanto
+                  </button>
+                </div>
+
+                {knowsBusiness === "yes" && (
+                  <Field label="Código de la barbería">
+                    <div className="relative">
+                      <ShieldCheck className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-accent" />
+                      <input
+                        value={trustCode}
+                        onChange={(e) => setTrustCode(e.target.value)}
+                        placeholder="123456"
+                        className="w-full rounded-lg border border-border bg-surface py-2.5 pl-9 pr-3 text-base text-primary"
+                      />
+                    </div>
+                  </Field>
+                )}
+
+                {knowsBusiness === "no" && (
+                  <Field label="Comprobante del adelanto">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoChange}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 py-3 text-sm text-muted-foreground hover:bg-surface"
+                    >
+                      <Camera className="h-4 w-4" />
+                      {depositProofPhoto ? "Cambiar comprobante" : "Subir comprobante de pago"}
+                    </button>
+                    {depositProofPhoto && (
+                      <img
+                        src={depositProofPhoto}
+                        alt="Comprobante"
+                        className="mt-2 h-32 w-full rounded-lg border border-border object-contain"
+                      />
+                    )}
+                  </Field>
+                )}
+              </div>
             )}
 
             <Field label="Tu nombre">

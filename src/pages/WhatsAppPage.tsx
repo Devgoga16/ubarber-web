@@ -1,15 +1,23 @@
+import { useState } from "react";
 import { MessageCircle, CheckCircle2, Power } from "lucide-react";
 import { useWhatsAppStatus, useConnectWhatsApp, useDisconnectWhatsApp } from "../hooks/useWhatsApp";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 
 export function WhatsAppPage() {
   const { data, isLoading } = useWhatsAppStatus();
   const connect = useConnectWhatsApp();
   const disconnect = useDisconnectWhatsApp();
+  const [confirmingDisconnect, setConfirmingDisconnect] = useState(false);
 
   const status = data?.status ?? "disconnected";
+
+  async function handleDisconnect() {
+    await disconnect.mutateAsync();
+    setConfirmingDisconnect(false);
+  }
 
   return (
     <div>
@@ -40,8 +48,7 @@ export function WhatsAppPage() {
             )}
             <Button
               variant="danger"
-              onClick={() => disconnect.mutate()}
-              loading={disconnect.isPending}
+              onClick={() => setConfirmingDisconnect(true)}
               className="flex w-full items-center justify-center gap-2"
             >
               <Power className="h-4 w-4" />
@@ -108,6 +115,17 @@ export function WhatsAppPage() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmingDisconnect}
+        title="Desconectar WhatsApp"
+        description="Se cerrará la sesión de este número. Los recordatorios y resúmenes de pago dejarán de enviarse hasta que vuelvas a conectarlo."
+        confirmLabel="Desconectar"
+        danger
+        loading={disconnect.isPending}
+        onConfirm={handleDisconnect}
+        onClose={() => setConfirmingDisconnect(false)}
+      />
     </div>
   );
 }

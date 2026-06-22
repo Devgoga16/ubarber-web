@@ -9,6 +9,10 @@ import {
   X,
   Camera,
   Wallet,
+  ShieldCheck,
+  ThumbsUp,
+  ThumbsDown,
+  Image as ImageIcon,
 } from "lucide-react";
 import {
   useAppointments,
@@ -16,6 +20,13 @@ import {
   useUpdateAppointmentStatus,
   useRegisterAppointmentPayment,
 } from "../hooks/useAppointments";
+import {
+  usePendingConfirmations,
+  useConfirmAvailability,
+  useRejectAvailability,
+  useConfirmDeposit,
+  useRejectDeposit,
+} from "../hooks/useAppointmentConfirmations";
 import { useLocations } from "../hooks/useLocations";
 import { useBarbers, useSetBarberFavoriteServices, useSetMyFavoriteServices } from "../hooks/useBarbers";
 import { useMyBarberProfile } from "../hooks/useBarberSelf";
@@ -102,6 +113,13 @@ export function AppointmentsPage() {
   const registerPayment = useRegisterAppointmentPayment();
   const setMyFavorites = useSetMyFavoriteServices();
   const setBarberFavorites = useSetBarberFavoriteServices();
+  const { data: pendingConfirmations } = usePendingConfirmations();
+  const confirmAvailability = useConfirmAvailability();
+  const rejectAvailability = useRejectAvailability();
+  const confirmDeposit = useConfirmDeposit();
+  const rejectDeposit = useRejectDeposit();
+  const [proofPreview, setProofPreview] = useState<string | null>(null);
+  const [rejectConfirmationTarget, setRejectConfirmationTarget] = useState<Appointment | null>(null);
 
   const visibleBarbers = activeLocationId
     ? (barbers ?? []).filter((b) => b.locationIds.includes(activeLocationId))
@@ -218,6 +236,16 @@ export function AppointmentsPage() {
     }
   }
 
+  async function handleRejectConfirmation() {
+    if (!rejectConfirmationTarget) return;
+    if (rejectConfirmationTarget.depositStatus === "awaiting_barber") {
+      await rejectAvailability.mutateAsync({ id: rejectConfirmationTarget._id });
+    } else {
+      await rejectDeposit.mutateAsync({ id: rejectConfirmationTarget._id });
+    }
+    setRejectConfirmationTarget(null);
+  }
+
   function handleGridSelect(appointment: Appointment) {
     if (appointment.status === "pending") {
       updateStatus.mutate({ id: appointment._id, status: "in_progress" });
@@ -240,6 +268,77 @@ export function AppointmentsPage() {
           </Button>
         }
       />
+
+      {pendingConfirmations && pendingConfirmations.length > 0 && (
+        <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-warning/30 bg-warning/5 p-4">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-warning" />
+            <p className="text-sm font-semibold text-primary">
+              {isBarber ? "Solicitudes por confirmar" : "Pagos por confirmar"} (
+              {pendingConfirmations.length})
+            </p>
+          </div>
+
+          {pendingConfirmations.map((appointment) => {
+            const client = typeof appointment.clientId === "object" ? appointment.clientId : null;
+            const barber =
+              typeof appointment.barberId === "object" ? (appointment.barberId as any) : null;
+            const barberName =
+              barber && typeof barber.userId === "object" ? barber.userId.name : "Barbero";
+            const startsAt = new Date(appointment.startsAt);
+
+            return (
+              <div
+                key={appointment._id}
+                className="flex flex-col gap-2 rounded-xl border border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <p className="text-sm font-medium text-primary">{client?.name ?? "Cliente"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {startsAt.toLocaleDateString("es", { day: "2-digit", month: "2-digit" })} ·{" "}
+                    {startsAt.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
+                    {!isBarber && ` · ${barberName}`}
+                    {appointment.depositAmountCents
+                      ? ` · Adelanto ${formatCurrency(appointment.depositAmountCents)}`
+                      : ""}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {!isBarber && appointment.depositProofPhoto && (
+                    <IconButton
+                      onClick={() => setProofPreview(appointment.depositProofPhoto ?? null)}
+                      aria-label="Ver comprobante"
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                    </IconButton>
+                  )}
+                  <Button
+                    variant="secondary"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm"
+                    loading={confirmAvailability.isPending || confirmDeposit.isPending}
+                    onClick={() =>
+                      isBarber
+                        ? confirmAvailability.mutate({ id: appointment._id })
+                        : confirmDeposit.mutate({ id: appointment._id })
+                    }
+                  >
+                    <ThumbsUp className="h-3.5 w-3.5" />
+                    {isBarber ? "Confirmar disponibilidad" : "Confirmar pago"}
+                  </Button>
+                  <IconButton
+                    variant="danger"
+                    onClick={() => setRejectConfirmationTarget(appointment)}
+                    aria-label="Rechazar"
+                  >
+                    <ThumbsDown className="h-4 w-4" />
+                  </IconButton>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-background shadow-soft p-2">
         <div className="flex items-center gap-2">
@@ -321,6 +420,9 @@ export function AppointmentsPage() {
               typeof appointment.paymentMethodId === "object"
                 ? appointment.paymentMethodId.name
                 : null;
+            const awaitingConfirmation =
+              appointment.depositStatus === "awaiting_barber" ||
+              appointment.depositStatus === "awaiting_owner_review";
             return (
               <div
                 key={appointment._id}
@@ -354,7 +456,14 @@ export function AppointmentsPage() {
                   >
                     {statusLabels[appointment.status]}
                   </span>
-                  {appointment.status === "pending" && (
+                  {awaitingConfirmation && (
+                    <span className="rounded-full bg-warning/15 px-3 py-1 text-xs font-medium text-warning">
+                      {appointment.depositStatus === "awaiting_barber"
+                        ? "Esperando confirmación del barbero"
+                        : "Esperando confirmación del pago"}
+                    </span>
+                  )}
+                  {!awaitingConfirmation && appointment.status === "pending" && (
                     <Button
                       variant="secondary"
                       className="px-3 py-1.5 text-sm"
@@ -363,7 +472,7 @@ export function AppointmentsPage() {
                       Iniciar
                     </Button>
                   )}
-                  {appointment.status === "in_progress" && (
+                  {!awaitingConfirmation && appointment.status === "in_progress" && (
                     <Button
                       variant="secondary"
                       className="px-3 py-1.5 text-sm"
@@ -372,7 +481,7 @@ export function AppointmentsPage() {
                       Terminar
                     </Button>
                   )}
-                  {!appointment.paid && appointment.status !== "cancelled" && (
+                  {!awaitingConfirmation && !appointment.paid && appointment.status !== "cancelled" && (
                     <Button
                       variant="secondary"
                       className="flex items-center gap-1.5 px-3 py-1.5 text-sm"
@@ -545,6 +654,27 @@ export function AppointmentsPage() {
         loading={updateStatus.isPending}
         onConfirm={handleConfirmCancel}
         onClose={() => setCancelTarget(null)}
+      />
+
+      <Modal open={proofPreview !== null} title="Comprobante del adelanto" onClose={() => setProofPreview(null)}>
+        {proofPreview && (
+          <img src={proofPreview} alt="Comprobante" className="w-full rounded-lg border border-border object-contain" />
+        )}
+      </Modal>
+
+      <ConfirmDialog
+        open={rejectConfirmationTarget !== null}
+        title={
+          rejectConfirmationTarget?.depositStatus === "awaiting_barber"
+            ? "Rechazar disponibilidad"
+            : "Rechazar pago"
+        }
+        description="El cliente recibirá un mensaje por WhatsApp avisando que la cita no pudo confirmarse."
+        confirmLabel="Rechazar"
+        danger
+        loading={rejectAvailability.isPending || rejectDeposit.isPending}
+        onConfirm={handleRejectConfirmation}
+        onClose={() => setRejectConfirmationTarget(null)}
       />
     </div>
   );

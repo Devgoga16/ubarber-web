@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../api/client";
-import type { Service } from "../api/types";
+import type { DepositType, Service } from "../api/types";
 
 export function useServices() {
   return useQuery({
@@ -15,6 +15,9 @@ export interface ServiceInput {
   priceCents: number;
   locationIds: string[];
   photo?: string;
+  depositType?: DepositType;
+  depositValueCents?: number;
+  depositValuePercent?: number;
 }
 
 export function useCreateService() {

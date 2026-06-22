@@ -14,6 +14,7 @@ export interface CreateBarberInput {
   name: string;
   email: string;
   password: string;
+  phone?: string;
   locationIds: string[];
   specialties?: string[];
 }
@@ -28,6 +29,7 @@ export function useCreateBarber() {
 }
 
 export interface UpdateBarberInput {
+  phone?: string;
   locationIds?: string[];
   specialties?: string[];
   commissionPercentage?: number;

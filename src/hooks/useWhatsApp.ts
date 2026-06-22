@@ -13,7 +13,9 @@ export function useWhatsAppStatus() {
     queryKey: ["whatsapp-status"],
     queryFn: async () =>
       (await apiClient.get<WhatsAppStatusResponse>("/business/whatsapp/status")).data,
-    refetchInterval: (query) => (query.state.data?.status === "connected" ? false : 2500),
+    // Sigue consultando aunque ya esté conectado, para detectar si se desconecta solo
+    // (por ejemplo si lo cierran desde el teléfono) — más rápido mientras espera el QR.
+    refetchInterval: (query) => (query.state.data?.status === "connected" ? 8000 : 2500),
   });
 }
 

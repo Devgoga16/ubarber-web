@@ -6,6 +6,8 @@ export interface Location {
   isActive: boolean;
 }
 
+export type DepositType = "percentage" | "fixed";
+
 export interface Service {
   _id: string;
   name: string;
@@ -13,6 +15,9 @@ export interface Service {
   priceCents: number;
   locationIds: string[];
   photo?: string;
+  depositType?: DepositType;
+  depositValueCents?: number;
+  depositValuePercent?: number;
   isActive: boolean;
 }
 
@@ -29,6 +34,7 @@ export interface Barber {
   _id: string;
   userId: { _id: string; name: string; email: string; isActive: boolean } | string;
   locationIds: string[];
+  phone?: string;
   specialties: string[];
   commissionPercentage?: number;
   favoriteServiceIds: string[];
@@ -36,6 +42,13 @@ export interface Barber {
 }
 
 export type AppointmentStatus = "pending" | "in_progress" | "completed" | "cancelled" | "no_show";
+
+export type DepositStatus =
+  | "not_required"
+  | "awaiting_barber"
+  | "awaiting_owner_review"
+  | "confirmed"
+  | "rejected";
 
 export interface PaymentMethod {
   _id: string;
@@ -58,6 +71,12 @@ export interface Appointment {
   paymentMethodId?: { _id: string; name: string } | string;
   receiptPhoto?: string;
   notes?: string;
+  source?: "staff" | "public";
+  depositStatus: DepositStatus;
+  depositAmountCents?: number;
+  depositMethod?: "proof_photo" | "trust_code";
+  depositProofPhoto?: string;
+  rejectionReason?: string;
 }
 
 export interface Plan {

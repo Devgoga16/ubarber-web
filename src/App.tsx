@@ -14,6 +14,7 @@ import { CashboxPage } from "./pages/CashboxPage";
 import { PaymentMethodsPage } from "./pages/PaymentMethodsPage";
 import { WhatsAppPage } from "./pages/WhatsAppPage";
 import { BookingLinkPage } from "./pages/BookingLinkPage";
+import { DepositSettingsPage } from "./pages/DepositSettingsPage";
 import { PublicBookingPage } from "./pages/PublicBookingPage";
 import { AdminBusinessesPage } from "./pages/admin/AdminBusinessesPage";
 
@@ -40,6 +41,7 @@ export default function App() {
               <Route path="/metodos-de-pago" element={<PaymentMethodsPage />} />
               <Route path="/whatsapp" element={<WhatsAppPage />} />
               <Route path="/enlace-de-reservas" element={<BookingLinkPage />} />
+              <Route path="/adelantos" element={<DepositSettingsPage />} />
               <Route path="/sedes" element={<LocationsPage />} />
               <Route path="/barberos" element={<BarbersPage />} />
               <Route path="/clientes" element={<ClientsPage />} />

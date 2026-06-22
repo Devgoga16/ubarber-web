@@ -20,7 +20,13 @@ import { CardSkeletons } from "../components/ui/Skeleton";
 import { EmptyState } from "../components/ui/EmptyState";
 import type { Barber } from "../api/types";
 
-const emptyCreateForm: CreateBarberInput = { name: "", email: "", password: "", locationIds: [] };
+const emptyCreateForm: CreateBarberInput = {
+  name: "",
+  email: "",
+  password: "",
+  phone: "",
+  locationIds: [],
+};
 
 export function BarbersPage() {
   const activeLocationId = useAuthStore((state) => state.activeLocationId);
@@ -38,6 +44,7 @@ export function BarbersPage() {
   const [editing, setEditing] = useState<Barber | null>(null);
   const [createForm, setCreateForm] = useState<CreateBarberInput>(emptyCreateForm);
   const [editLocationIds, setEditLocationIds] = useState<string[]>([]);
+  const [editPhone, setEditPhone] = useState("");
   const [statusTarget, setStatusTarget] = useState<Barber | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,6 +57,7 @@ export function BarbersPage() {
   function openEdit(barber: Barber) {
     setEditing(barber);
     setEditLocationIds(barber.locationIds);
+    setEditPhone(barber.phone ?? "");
     setOpen(true);
   }
 
@@ -71,7 +79,11 @@ export function BarbersPage() {
     setError(null);
     try {
       if (editing) {
-        await updateBarber.mutateAsync({ id: editing._id, locationIds: editLocationIds });
+        await updateBarber.mutateAsync({
+          id: editing._id,
+          locationIds: editLocationIds,
+          phone: editPhone,
+        });
       } else {
         await createBarber.mutateAsync(createForm);
       }
@@ -184,6 +196,19 @@ export function BarbersPage() {
               </Field>
             </>
           )}
+
+          <Field label="WhatsApp (para recibir notificaciones de citas)">
+            <Input
+              type="tel"
+              placeholder="987654321"
+              value={editing ? editPhone : (createForm.phone ?? "")}
+              onChange={(e) =>
+                editing
+                  ? setEditPhone(e.target.value)
+                  : setCreateForm({ ...createForm, phone: e.target.value })
+              }
+            />
+          </Field>
 
           <Field label="Sedes donde trabaja">
             <div className="flex flex-col gap-2">

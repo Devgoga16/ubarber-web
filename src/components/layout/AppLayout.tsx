@@ -14,12 +14,14 @@ import {
   CreditCard,
   MessageCircle,
   Link as LinkIcon,
+  ShieldHalf,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useAuthStore } from "../../store/auth";
 import { useSubscriptionGateStore } from "../../store/subscriptionGate";
 import { PlanCard } from "./PlanCard";
 import { LocationSwitcher } from "./LocationSwitcher";
+import { WhatsAppStatusBadge } from "./WhatsAppStatusBadge";
 import { Button } from "../ui/Button";
 
 interface NavItem {
@@ -40,6 +42,7 @@ const ownerNavItems: NavItem[] = [
   { to: "/servicios", label: "Servicios", icon: Tag, mobile: false },
   { to: "/whatsapp", label: "WhatsApp", icon: MessageCircle, mobile: false },
   { to: "/enlace-de-reservas", label: "Enlace de reservas", icon: LinkIcon, mobile: false },
+  { to: "/adelantos", label: "Adelantos", icon: ShieldHalf, mobile: false },
 ];
 
 // El barbero solo ve su propia agenda y su propio horario — nada de gestión del negocio.
@@ -137,6 +140,11 @@ export function AppLayout() {
         </nav>
         <div className="border-t border-white/10 pt-4">
           {(user?.role === "owner" || user?.role === "manager") && <PlanCard />}
+          {user?.role !== "super_admin" && (
+            <div className="mb-3">
+              <WhatsAppStatusBadge />
+            </div>
+          )}
           <div className="flex items-center gap-2.5 px-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-primary-foreground">
               {user?.name?.charAt(0).toUpperCase()}
@@ -168,6 +176,11 @@ export function AppLayout() {
           {(user?.role === "owner" || user?.role === "manager") && (
             <div className="lg:hidden">
               <LocationSwitcher />
+            </div>
+          )}
+          {user?.role !== "super_admin" && (
+            <div className="mb-4 lg:hidden">
+              <WhatsAppStatusBadge dark={false} />
             </div>
           )}
           <Outlet />

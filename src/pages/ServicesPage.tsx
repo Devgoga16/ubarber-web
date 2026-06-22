@@ -8,6 +8,7 @@ import {
   type ServiceInput,
 } from "../hooks/useServices";
 import { useLocations } from "../hooks/useLocations";
+import { useDepositSettings } from "../hooks/useDepositSettings";
 import { useAuthStore } from "../store/auth";
 import { Modal } from "../components/ui/Modal";
 import { Field, Input } from "../components/ui/Field";
@@ -27,6 +28,10 @@ const emptyForm = {
   priceCents: "",
   locationIds: [] as string[],
   photo: undefined as string | undefined,
+  hasOwnDeposit: false,
+  depositType: "percentage" as "percentage" | "fixed",
+  depositValuePercent: "20",
+  depositValueCents: "0",
 };
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -42,6 +47,8 @@ export function ServicesPage() {
   const activeLocationId = useAuthStore((state) => state.activeLocationId);
   const { data: services, isLoading } = useServices();
   const { data: locations } = useLocations();
+  const { data: depositSettings } = useDepositSettings();
+  const showDepositOverride = depositSettings?.depositEnabled && depositSettings.depositScope === "per_service";
   const createService = useCreateService();
   const updateService = useUpdateService();
   const setStatus = useSetServiceStatus();
@@ -71,6 +78,10 @@ export function ServicesPage() {
       priceCents: String(service.priceCents / 100),
       locationIds: service.locationIds,
       photo: service.photo,
+      hasOwnDeposit: Boolean(service.depositType),
+      depositType: service.depositType ?? "percentage",
+      depositValuePercent: String(service.depositValuePercent ?? 20),
+      depositValueCents: String((service.depositValueCents ?? 0) / 100),
     });
     setOpen(true);
   }
@@ -100,6 +111,13 @@ export function ServicesPage() {
       priceCents: Math.round(Number(form.priceCents) * 100),
       locationIds: form.locationIds,
       photo: form.photo,
+      ...(form.hasOwnDeposit
+        ? {
+            depositType: form.depositType,
+            depositValuePercent: Number(form.depositValuePercent),
+            depositValueCents: Math.round(Number(form.depositValueCents) * 100),
+          }
+        : {}),
     };
     try {
       if (editing) {
@@ -251,6 +269,56 @@ export function ServicesPage() {
               ))}
             </div>
           </Field>
+          {showDepositOverride && (
+            <Field label="Adelanto al reservar online">
+              <label className="mb-2 flex items-center gap-2 text-sm text-primary">
+                <input
+                  type="checkbox"
+                  checked={form.hasOwnDeposit}
+                  onChange={(e) => setForm({ ...form, hasOwnDeposit: e.target.checked })}
+                />
+                Este servicio tiene su propio adelanto (si no, usa el valor por defecto del negocio)
+              </label>
+              {form.hasOwnDeposit && (
+                <div className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, depositType: "percentage" })}
+                      className={`flex-1 rounded-md px-2 py-1.5 text-sm font-medium ${form.depositType === "percentage" ? "bg-accent/10 text-accent" : "text-muted-foreground"}`}
+                    >
+                      Porcentaje
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, depositType: "fixed" })}
+                      className={`flex-1 rounded-md px-2 py-1.5 text-sm font-medium ${form.depositType === "fixed" ? "bg-accent/10 text-accent" : "text-muted-foreground"}`}
+                    >
+                      Monto fijo
+                    </button>
+                  </div>
+                  {form.depositType === "percentage" ? (
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={form.depositValuePercent}
+                      onChange={(e) => setForm({ ...form, depositValuePercent: e.target.value })}
+                    />
+                  ) : (
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={form.depositValueCents}
+                      onChange={(e) => setForm({ ...form, depositValueCents: e.target.value })}
+                    />
+                  )}
+                </div>
+              )}
+            </Field>
+          )}
+
           {error && <p className="mb-3 text-sm text-danger">{error}</p>}
           <Button type="submit" loading={isSaving} className="w-full">
             Guardar

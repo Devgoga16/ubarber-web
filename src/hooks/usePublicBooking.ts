@@ -14,6 +14,9 @@ export interface PublicService {
   priceCents: number;
   photo?: string;
   locationIds: string[];
+  depositType?: "percentage" | "fixed";
+  depositValueCents?: number;
+  depositValuePercent?: number;
 }
 
 export interface PublicBarber {
@@ -23,12 +26,39 @@ export interface PublicBarber {
   favoriteServiceIds: string[];
 }
 
+export interface PublicDepositInfo {
+  enabled: boolean;
+  scope: "global" | "per_service";
+  type: "percentage" | "fixed";
+  valueCents: number;
+  valuePercent: number;
+}
+
 export interface PublicBusinessInfo {
   business: { name: string };
   bookable: boolean;
+  deposit: PublicDepositInfo;
   locations: PublicLocation[];
   services: PublicService[];
   barbers: PublicBarber[];
+}
+
+export function computeRequiredDepositCents(deposit: PublicDepositInfo, services: PublicService[]): number {
+  if (!deposit.enabled) return 0;
+  const apply = (type: "percentage" | "fixed", cents: number, percent: number, base: number) =>
+    type === "percentage" ? Math.round(base * (percent / 100)) : cents;
+
+  if (deposit.scope === "global") {
+    const total = services.reduce((sum, s) => sum + s.priceCents, 0);
+    return apply(deposit.type, deposit.valueCents, deposit.valuePercent, total);
+  }
+
+  return services.reduce((sum, s) => {
+    const type = s.depositType ?? deposit.type;
+    const cents = s.depositValueCents ?? deposit.valueCents;
+    const percent = s.depositValuePercent ?? deposit.valuePercent;
+    return sum + apply(type, cents, percent, s.priceCents);
+  }, 0);
 }
 
 export function usePublicBusiness(slug: string) {
@@ -58,6 +88,9 @@ export interface CreatePublicAppointmentInput {
   serviceIds: string[];
   startsAt: string;
   client: { name: string; phone: string };
+  depositMethod?: "proof_photo" | "trust_code";
+  depositProofPhoto?: string;
+  trustCode?: string;
 }
 
 export function useCreatePublicAppointment(slug: string) {
