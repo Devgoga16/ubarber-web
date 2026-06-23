@@ -46,20 +46,58 @@ export function CashboxPage() {
     locationId: activeLocationId ?? undefined,
   });
 
-  const appointments = useMemo(
-    () => (allAppointments ?? []).filter((a) => a.paid),
-    [allAppointments]
-  );
+  interface CashEntry {
+    key: string;
+    label: "Servicio" | "Adelanto";
+    clientName: string;
+    date: string;
+    methodName: string;
+    amountCents: number;
+  }
+
+  const entries = useMemo(() => {
+    const list: CashEntry[] = [];
+    for (const a of allAppointments ?? []) {
+      const client = typeof a.clientId === "object" ? a.clientId : null;
+
+      // Adelanto cobrado online (comprobante ya confirmado por el dueño) — es plata real recibida.
+      if (a.depositStatus === "confirmed" && a.depositMethod === "proof_photo" && a.depositAmountCents) {
+        const methodName =
+          typeof a.depositPaymentMethodId === "object" ? a.depositPaymentMethodId.name : "Sin método";
+        list.push({
+          key: `${a._id}-deposit`,
+          label: "Adelanto",
+          clientName: client?.name ?? "Cliente",
+          date: a.depositConfirmedAt ?? a.startsAt,
+          methodName,
+          amountCents: a.depositAmountCents,
+        });
+      }
+
+      if (a.paid) {
+        const methodName =
+          typeof a.paymentMethodId === "object" ? a.paymentMethodId.name : "Sin método";
+        list.push({
+          key: `${a._id}-payment`,
+          label: "Servicio",
+          clientName: client?.name ?? "Cliente",
+          date: a.paidAt ?? a.startsAt,
+          methodName,
+          amountCents: a.finalPaymentAmountCents ?? a.totalPriceCents,
+        });
+      }
+    }
+    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [allAppointments]);
 
   const summary = useMemo(() => {
-    const total = appointments.reduce((sum, a) => sum + a.totalPriceCents, 0);
+    const total = entries.reduce((sum, e) => sum + e.amountCents, 0);
     const byMethod = new Map<string, number>();
-    for (const a of appointments) {
-      const name = typeof a.paymentMethodId === "object" ? a.paymentMethodId.name : "Sin método";
-      byMethod.set(name, (byMethod.get(name) ?? 0) + a.totalPriceCents);
+    for (const e of entries) {
+      byMethod.set(e.methodName, (byMethod.get(e.methodName) ?? 0) + e.amountCents);
     }
-    return { total, count: appointments.length, byMethod: Array.from(byMethod.entries()) };
-  }, [appointments]);
+    return { total, count: entries.length, byMethod: Array.from(byMethod.entries()) };
+  }, [entries]);
 
   return (
     <div>
@@ -97,39 +135,30 @@ export function CashboxPage() {
             Pagos registrados ({summary.count})
           </h2>
 
-          {appointments.length === 0 && (
+          {entries.length === 0 && (
             <EmptyState icon={Wallet} title="Sin pagos registrados en este periodo" />
           )}
 
           <div className="flex flex-col gap-2">
-            {appointments.map((appointment) => {
-              const client = typeof appointment.clientId === "object" ? appointment.clientId : null;
-              const methodName =
-                typeof appointment.paymentMethodId === "object"
-                  ? appointment.paymentMethodId.name
-                  : "Sin método";
-              return (
-                <div
-                  key={appointment._id}
-                  className="flex items-center justify-between gap-2 rounded-lg px-2 py-2 hover:bg-surface"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-primary">{client?.name ?? "Cliente"}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(appointment.startsAt).toLocaleDateString("es", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                      })}{" "}
-                      · {methodName}
-                    </p>
-                  </div>
-                  <p className="text-sm font-medium text-primary">
-                    {formatCurrency(appointment.totalPriceCents)}
+            {entries.map((entry) => (
+              <div
+                key={entry.key}
+                className="flex items-center justify-between gap-2 rounded-lg px-2 py-2 hover:bg-surface"
+              >
+                <div>
+                  <p className="text-sm font-medium text-primary">{entry.clientName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(entry.date).toLocaleDateString("es", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    })}{" "}
+                    · {entry.methodName} · {entry.label}
                   </p>
                 </div>
-              );
-            })}
+                <p className="text-sm font-medium text-primary">{formatCurrency(entry.amountCents)}</p>
+              </div>
+            ))}
           </div>
         </div>
       )}

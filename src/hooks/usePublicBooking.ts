@@ -26,6 +26,11 @@ export interface PublicBarber {
   favoriteServiceIds: string[];
 }
 
+export interface PublicPaymentMethod {
+  _id: string;
+  name: string;
+}
+
 export interface PublicDepositInfo {
   enabled: boolean;
   scope: "global" | "per_service";
@@ -41,6 +46,7 @@ export interface PublicBusinessInfo {
   locations: PublicLocation[];
   services: PublicService[];
   barbers: PublicBarber[];
+  paymentMethods: PublicPaymentMethod[];
 }
 
 export function computeRequiredDepositCents(deposit: PublicDepositInfo, services: PublicService[]): number {
@@ -90,6 +96,7 @@ export interface CreatePublicAppointmentInput {
   client: { name: string; phone: string };
   depositMethod?: "proof_photo" | "trust_code";
   depositProofPhoto?: string;
+  depositPaymentMethodId?: string;
   trustCode?: string;
 }
 

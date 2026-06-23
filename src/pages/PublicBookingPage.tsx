@@ -1,6 +1,16 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { Scissors, CheckCircle2, CalendarDays, MapPin, Camera, ShieldCheck } from "lucide-react";
+import {
+  Scissors,
+  CheckCircle2,
+  CalendarDays,
+  MapPin,
+  Camera,
+  ShieldCheck,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import {
   usePublicBusiness,
   usePublicAvailability,
@@ -48,13 +58,23 @@ export function PublicBookingPage() {
   const [knowsBusiness, setKnowsBusiness] = useState<"yes" | "no" | null>(null);
   const [trustCode, setTrustCode] = useState("");
   const [depositProofPhoto, setDepositProofPhoto] = useState<string | undefined>(undefined);
+  const [depositPaymentMethodId, setDepositPaymentMethodId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [step, setStep] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const locations = data?.locations ?? [];
   const services = data?.services ?? [];
   const barbers = data?.barbers ?? [];
+  const paymentMethods = data?.paymentMethods ?? [];
+
+  // Si el negocio tiene una sola sede, se selecciona sola — no debe depender de que el cliente la elija.
+  useEffect(() => {
+    if (!locationId && locations.length === 1) {
+      setLocationId(locations[0]._id);
+    }
+  }, [locationId, locations]);
 
   const barbersForLocation = locationId
     ? barbers.filter((b) => b.locationIds.includes(locationId))
@@ -89,7 +109,7 @@ export function PublicBookingPage() {
   const depositResolved =
     !needsDepositStep ||
     (knowsBusiness === "yes" && trustCode.trim().length > 0) ||
-    (knowsBusiness === "no" && Boolean(depositProofPhoto));
+    (knowsBusiness === "no" && Boolean(depositProofPhoto) && Boolean(depositPaymentMethodId));
 
   async function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -97,15 +117,35 @@ export function PublicBookingPage() {
     setDepositProofPhoto(await readFileAsDataUrl(file));
   }
 
-  const canSubmit =
-    locationId &&
-    barberId &&
-    serviceIds.length > 0 &&
-    date &&
-    time &&
-    clientName &&
-    clientPhone &&
-    depositResolved;
+  const steps = useMemo(() => {
+    const list = [
+      { key: "servicios", label: "Servicios" },
+      { key: "barbero", label: "Barbero" },
+    ];
+    if (needsDepositStep) list.push({ key: "adelanto", label: "Adelanto" });
+    list.push({ key: "datos", label: "Tus datos" });
+    return list;
+  }, [needsDepositStep]);
+
+  const stepValid: Record<string, boolean> = {
+    servicios: Boolean(locationId && serviceIds.length > 0),
+    barbero: Boolean(barberId && date && time),
+    adelanto: depositResolved,
+    datos: Boolean(clientName && clientPhone),
+  };
+
+  const currentKey = steps[step]?.key;
+  const canGoNext = stepValid[currentKey] ?? false;
+  const canSubmit = steps.every((s) => stepValid[s.key]);
+
+  function goNext() {
+    if (!canGoNext) return;
+    setStep((s) => Math.min(s + 1, steps.length - 1));
+  }
+
+  function goBack() {
+    setStep((s) => Math.max(s - 1, 0));
+  }
 
   async function handleSubmit() {
     setError(null);
@@ -123,7 +163,7 @@ export function PublicBookingPage() {
         ...(needsDepositStep
           ? knowsBusiness === "yes"
             ? { depositMethod: "trust_code" as const, trustCode }
-            : { depositMethod: "proof_photo" as const, depositProofPhoto }
+            : { depositMethod: "proof_photo" as const, depositProofPhoto, depositPaymentMethodId }
           : {}),
       });
       setDone(true);
@@ -180,213 +220,293 @@ export function PublicBookingPage() {
         )}
 
         {data && data.bookable && !done && (
-          <div className="flex flex-col gap-4">
-            {locations.length > 1 && (
-              <Field label="Sede">
-                <select
-                  value={locationId}
-                  onChange={(e) => {
-                    setLocationId(e.target.value);
-                    setBarberId("");
-                    setTime("");
-                  }}
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-base text-primary"
-                >
-                  <option value="">Selecciona una sede</option>
-                  {locations.map((l) => (
-                    <option key={l._id} value={l._id}>
-                      {l.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            )}
-            {locations.length === 1 && (
-              <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-primary">
-                <MapPin className="h-4 w-4 text-accent" />
-                {locations[0].name}
-              </div>
-            )}
+          <div className="flex flex-col gap-5">
+            <div className="flex items-center gap-1.5">
+              {steps.map((s, i) => (
+                <div key={s.key} className="flex flex-1 flex-col items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => i < step && setStep(i)}
+                    disabled={i >= step}
+                    className={cn(
+                      "flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-colors",
+                      i === step
+                        ? "bg-accent text-accent-foreground"
+                        : i < step
+                          ? "bg-success/15 text-success"
+                          : "bg-surface text-muted-foreground"
+                    )}
+                  >
+                    {i < step ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                  </button>
+                  <span
+                    className={cn(
+                      "text-center text-[11px] font-medium leading-tight",
+                      i === step ? "text-primary" : "text-muted-foreground"
+                    )}
+                  >
+                    {s.label}
+                  </span>
+                </div>
+              ))}
+            </div>
 
-            <Field label="Servicios">
-              <ServicePicker
-                services={servicesForLocation}
-                selectedIds={serviceIds}
-                onToggleSelect={toggleService}
-                favoriteIds={selectedBarber?.favoriteServiceIds ?? []}
-              />
-            </Field>
-
-            <Field label="Barbero">
-              <select
-                value={barberId}
-                onChange={(e) => {
-                  setBarberId(e.target.value);
-                  setTime("");
-                }}
-                disabled={!locationId}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-base text-primary disabled:opacity-50"
-              >
-                <option value="">Selecciona un barbero</option>
-                {barbersForLocation.map((b) => (
-                  <option key={b._id} value={b._id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-
-            <Field label="Fecha">
-              <Input
-                type="date"
-                value={date}
-                min={toDateInputValue(new Date())}
-                onChange={(e) => {
-                  setDate(e.target.value);
-                  setTime("");
-                }}
-              />
-            </Field>
-
-            {availabilityEnabled && (
-              <Field label="Hora disponible">
-                {loadingSlots && (
-                  <div className="flex justify-center py-3">
-                    <Spinner size="sm" />
-                  </div>
-                )}
-                {!loadingSlots && availability?.slots.length === 0 && (
-                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CalendarDays className="h-4 w-4" />
-                    No hay horarios disponibles ese día, prueba otra fecha.
-                  </p>
-                )}
-                {!loadingSlots && availability && availability.slots.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {availability.slots.map((slot) => (
-                      <button
-                        key={slot}
-                        type="button"
-                        onClick={() => setTime(slot)}
-                        className={cn(
-                          "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
-                          time === slot
-                            ? "border-accent bg-accent/10 text-accent"
-                            : "border-border text-muted-foreground hover:bg-surface"
-                        )}
+            <div className="flex flex-col gap-4 rounded-2xl border border-border bg-background p-4 shadow-soft">
+              {currentKey === "servicios" && (
+                <>
+                  {locations.length > 1 && (
+                    <Field label="Sede">
+                      <select
+                        value={locationId}
+                        onChange={(e) => {
+                          setLocationId(e.target.value);
+                          setBarberId("");
+                          setTime("");
+                        }}
+                        className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-base text-primary"
                       >
-                        {slot}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </Field>
-            )}
-
-            {needsDepositStep && (
-              <div className="flex flex-col gap-3 rounded-2xl border border-accent/30 bg-accent/5 p-4">
-                <div>
-                  <p className="text-sm font-medium text-primary">
-                    Esta cita requiere un adelanto de {formatCurrency(requiredDepositCents)}
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    ¿La barbería ya te conoce? Pídele el código y paga una vez finalizado el corte.
-                  </p>
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setKnowsBusiness("yes")}
-                    className={cn(
-                      "flex-1 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors",
-                      knowsBusiness === "yes"
-                        ? "border-accent bg-accent/10 text-accent"
-                        : "border-border text-muted-foreground"
-                    )}
-                  >
-                    Sí, tengo el código
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setKnowsBusiness("no")}
-                    className={cn(
-                      "flex-1 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors",
-                      knowsBusiness === "no"
-                        ? "border-accent bg-accent/10 text-accent"
-                        : "border-border text-muted-foreground"
-                    )}
-                  >
-                    No, voy a pagar el adelanto
-                  </button>
-                </div>
-
-                {knowsBusiness === "yes" && (
-                  <Field label="Código de la barbería">
-                    <div className="relative">
-                      <ShieldCheck className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-accent" />
-                      <input
-                        value={trustCode}
-                        onChange={(e) => setTrustCode(e.target.value)}
-                        placeholder="123456"
-                        className="w-full rounded-lg border border-border bg-surface py-2.5 pl-9 pr-3 text-base text-primary"
-                      />
+                        <option value="">Selecciona una sede</option>
+                        {locations.map((l) => (
+                          <option key={l._id} value={l._id}>
+                            {l.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  )}
+                  {locations.length === 1 && (
+                    <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-primary">
+                      <MapPin className="h-4 w-4 text-accent" />
+                      {locations[0].name}
                     </div>
-                  </Field>
-                )}
+                  )}
 
-                {knowsBusiness === "no" && (
-                  <Field label="Comprobante del adelanto">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handlePhotoChange}
+                  <Field label="Servicios">
+                    <ServicePicker
+                      services={servicesForLocation}
+                      selectedIds={serviceIds}
+                      onToggleSelect={toggleService}
+                      favoriteIds={selectedBarber?.favoriteServiceIds ?? []}
                     />
+                  </Field>
+                </>
+              )}
+
+              {currentKey === "barbero" && (
+                <>
+                  <Field label="Barbero">
+                    <select
+                      value={barberId}
+                      onChange={(e) => {
+                        setBarberId(e.target.value);
+                        setTime("");
+                      }}
+                      disabled={!locationId}
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-base text-primary disabled:opacity-50"
+                    >
+                      <option value="">Selecciona un barbero</option>
+                      {barbersForLocation.map((b) => (
+                        <option key={b._id} value={b._id}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+
+                  <Field label="Fecha">
+                    <Input
+                      type="date"
+                      value={date}
+                      min={toDateInputValue(new Date())}
+                      onChange={(e) => {
+                        setDate(e.target.value);
+                        setTime("");
+                      }}
+                    />
+                  </Field>
+
+                  {availabilityEnabled && (
+                    <Field label="Hora disponible">
+                      {loadingSlots && (
+                        <div className="flex justify-center py-3">
+                          <Spinner size="sm" />
+                        </div>
+                      )}
+                      {!loadingSlots && availability?.slots.length === 0 && (
+                        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CalendarDays className="h-4 w-4" />
+                          No hay horarios disponibles ese día, prueba otra fecha.
+                        </p>
+                      )}
+                      {!loadingSlots && availability && availability.slots.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {availability.slots.map((slot) => (
+                            <button
+                              key={slot}
+                              type="button"
+                              onClick={() => setTime(slot)}
+                              className={cn(
+                                "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
+                                time === slot
+                                  ? "border-accent bg-accent/10 text-accent"
+                                  : "border-border text-muted-foreground hover:bg-surface"
+                              )}
+                            >
+                              {slot}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </Field>
+                  )}
+                </>
+              )}
+
+              {currentKey === "adelanto" && (
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-primary">
+                      Esta cita requiere un adelanto de {formatCurrency(requiredDepositCents)}
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      ¿La barbería ya te conoce? Pídele el código y paga una vez finalizado el corte.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 py-3 text-sm text-muted-foreground hover:bg-surface"
+                      onClick={() => setKnowsBusiness("yes")}
+                      className={cn(
+                        "flex-1 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors",
+                        knowsBusiness === "yes"
+                          ? "border-accent bg-accent/10 text-accent"
+                          : "border-border text-muted-foreground"
+                      )}
                     >
-                      <Camera className="h-4 w-4" />
-                      {depositProofPhoto ? "Cambiar comprobante" : "Subir comprobante de pago"}
+                      Sí, tengo el código
                     </button>
-                    {depositProofPhoto && (
-                      <img
-                        src={depositProofPhoto}
-                        alt="Comprobante"
-                        className="mt-2 h-32 w-full rounded-lg border border-border object-contain"
-                      />
-                    )}
-                  </Field>
-                )}
-              </div>
-            )}
+                    <button
+                      type="button"
+                      onClick={() => setKnowsBusiness("no")}
+                      className={cn(
+                        "flex-1 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors",
+                        knowsBusiness === "no"
+                          ? "border-accent bg-accent/10 text-accent"
+                          : "border-border text-muted-foreground"
+                      )}
+                    >
+                      No, voy a pagar el adelanto
+                    </button>
+                  </div>
 
-            <Field label="Tu nombre">
-              <Input value={clientName} onChange={(e) => setClientName(e.target.value)} required />
-            </Field>
-            <Field label="Tu WhatsApp">
-              <Input
-                type="tel"
-                placeholder="987654321"
-                value={clientPhone}
-                onChange={(e) => setClientPhone(e.target.value)}
-                required
-              />
-            </Field>
+                  {knowsBusiness === "yes" && (
+                    <Field label="Código de la barbería">
+                      <div className="relative">
+                        <ShieldCheck className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-accent" />
+                        <input
+                          value={trustCode}
+                          onChange={(e) => setTrustCode(e.target.value)}
+                          placeholder="123456"
+                          className="w-full rounded-lg border border-border bg-surface py-2.5 pl-9 pr-3 text-base text-primary"
+                        />
+                      </div>
+                    </Field>
+                  )}
+
+                  {knowsBusiness === "no" && (
+                    <>
+                      <Field label="¿Con qué pagaste el adelanto?">
+                        <select
+                          value={depositPaymentMethodId}
+                          onChange={(e) => setDepositPaymentMethodId(e.target.value)}
+                          className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-base text-primary"
+                        >
+                          <option value="">Selecciona un método</option>
+                          {paymentMethods.map((m) => (
+                            <option key={m._id} value={m._id}>
+                              {m.name}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+
+                      <Field label="Comprobante del adelanto">
+                        <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handlePhotoChange}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 py-3 text-sm text-muted-foreground hover:bg-surface"
+                      >
+                        <Camera className="h-4 w-4" />
+                        {depositProofPhoto ? "Cambiar comprobante" : "Subir comprobante de pago"}
+                      </button>
+                      {depositProofPhoto && (
+                        <img
+                          src={depositProofPhoto}
+                          alt="Comprobante"
+                          className="mt-2 h-32 w-full rounded-lg border border-border object-contain"
+                        />
+                      )}
+                      </Field>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {currentKey === "datos" && (
+                <>
+                  <Field label="Tu nombre">
+                    <Input value={clientName} onChange={(e) => setClientName(e.target.value)} required />
+                  </Field>
+                  <Field label="Tu WhatsApp">
+                    <Input
+                      type="tel"
+                      placeholder="987654321"
+                      value={clientPhone}
+                      onChange={(e) => setClientPhone(e.target.value)}
+                      required
+                    />
+                  </Field>
+                </>
+              )}
+            </div>
 
             {error && <p className="text-sm text-danger">{error}</p>}
 
-            <Button
-              onClick={handleSubmit}
-              loading={createAppointment.isPending}
-              disabled={!canSubmit}
-              className="w-full"
-            >
-              Confirmar cita
-            </Button>
+            <div className="flex gap-2">
+              {step > 0 && (
+                <Button variant="secondary" onClick={goBack} className="flex items-center gap-1.5">
+                  <ChevronLeft className="h-4 w-4" />
+                  Atrás
+                </Button>
+              )}
+              {step < steps.length - 1 ? (
+                <Button
+                  onClick={goNext}
+                  disabled={!canGoNext}
+                  className="flex flex-1 items-center justify-center gap-1.5"
+                >
+                  Siguiente
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleSubmit}
+                  loading={createAppointment.isPending}
+                  disabled={!canSubmit}
+                  className="flex-1"
+                >
+                  Confirmar cita
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </div>

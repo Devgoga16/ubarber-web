@@ -69,6 +69,7 @@ export interface Appointment {
   paid: boolean;
   paidAt?: string;
   paymentMethodId?: { _id: string; name: string } | string;
+  finalPaymentAmountCents?: number;
   receiptPhoto?: string;
   notes?: string;
   source?: "staff" | "public";
@@ -76,6 +77,8 @@ export interface Appointment {
   depositAmountCents?: number;
   depositMethod?: "proof_photo" | "trust_code";
   depositProofPhoto?: string;
+  depositPaymentMethodId?: { _id: string; name: string } | string;
+  depositConfirmedAt?: string;
   rejectionReason?: string;
 }
 
