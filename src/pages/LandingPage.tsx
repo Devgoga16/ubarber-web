@@ -24,7 +24,7 @@ import { formatCurrency } from "../lib/format";
 import { usePublicPlans } from "../hooks/usePublicPlans";
 
 // TODO: reemplaza este número por el WhatsApp real de ventas (formato 51XXXXXXXXX, sin "+").
-const SALES_WHATSAPP = "51999999999";
+const SALES_WHATSAPP = "51955768897";
 const salesWhatsappUrl = `https://wa.me/${SALES_WHATSAPP}?text=${encodeURIComponent(
   "Hola, quiero información sobre uBarber para mi barbería"
 )}`;
