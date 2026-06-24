@@ -94,14 +94,14 @@ function Hero() {
           Agenda online, recordatorios por WhatsApp, control de caja, comisiones de tus barberos y
           reservas 24/7 para tus clientes — todo en un solo lugar.
         </p>
-        <div className="flex animate-fade-up flex-col gap-3 [animation-delay:0.26s] sm:flex-row">
-          <a href={salesWhatsappUrl} target="_blank" rel="noopener noreferrer">
-            <Button className="hover-lift px-6 py-3 text-base">Quiero probarlo</Button>
+        <div className="flex w-full max-w-xs animate-fade-up flex-col gap-3 [animation-delay:0.26s] sm:w-auto sm:max-w-none sm:flex-row">
+          <a href={salesWhatsappUrl} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+            <Button className="hover-lift w-full px-6 py-3 text-base sm:w-auto">Quiero probarlo</Button>
           </a>
-          <a href="#funciones">
+          <a href="#funciones" className="w-full sm:w-auto">
             <Button
               variant="secondary"
-              className="hover-lift border-white/20 bg-white/5 px-6 py-3 text-base text-primary-foreground hover:bg-white/10"
+              className="hover-lift w-full border-white/20 bg-white/5 px-6 py-3 text-base text-primary-foreground hover:bg-white/10 sm:w-auto"
             >
               Ver cómo funciona
             </Button>
@@ -121,7 +121,7 @@ interface AudienceCardProps {
 
 function AudienceCard({ icon: Icon, title, description, items }: AudienceCardProps) {
   return (
-    <div className="hover-lift flex h-full flex-col gap-4 rounded-2xl border border-border bg-background p-6 shadow-soft hover:shadow-soft-lg">
+    <div className="hover-lift flex h-full flex-col items-center gap-4 rounded-2xl border border-border bg-background p-6 text-center shadow-soft hover:shadow-soft-lg sm:items-start sm:text-left">
       <div className="flex h-11 w-11 items-center justify-center rounded-xl gradient-accent shadow-soft">
         <Icon className="h-5 w-5 text-accent-foreground" />
       </div>
@@ -129,11 +129,11 @@ function AudienceCard({ icon: Icon, title, description, items }: AudienceCardPro
         <h3 className="font-heading text-lg font-semibold tracking-tight text-primary">{title}</h3>
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       </div>
-      <ul className="flex flex-col gap-2">
+      <ul className="flex w-full flex-col gap-2 text-left">
         {items.map((item) => (
           <li key={item} className="flex items-start gap-2 text-sm text-primary">
             <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-accent" />
-            {item}
+            <span>{item}</span>
           </li>
         ))}
       </ul>
@@ -204,13 +204,13 @@ function Audiences() {
 
 function FeatureRow({ icon: Icon, title, description }: { icon: typeof CalendarDays; title: string; description: string }) {
   return (
-    <div className="flex gap-3">
+    <div className="flex flex-col items-center gap-2.5 px-1 text-center sm:flex-row sm:items-start sm:gap-3 sm:px-0 sm:text-left">
       <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
         <Icon className="h-5 w-5" />
       </div>
       <div>
-        <p className="font-medium text-primary">{title}</p>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="text-sm font-medium text-primary sm:text-base">{title}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground sm:mt-0 sm:text-sm">{description}</p>
       </div>
     </div>
   );
@@ -234,10 +234,10 @@ function Features() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <Reveal className="mb-10 text-center">
           <h2 className="font-heading text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
-            Todo lo que necesitas, sin armar 5 herramientas distintas
+            No necesitas más herramientas, aquí lo tienes todo
           </h2>
         </Reveal>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
           {featureItems.map((item, index) => (
             <Reveal key={item.title} delay={(index % 3) * 80}>
               <FeatureRow icon={item.icon} title={item.title} description={item.description} />
@@ -265,7 +265,7 @@ function HowItWorks() {
       <div className="grid gap-6 sm:grid-cols-3">
         {steps.map((step, index) => (
           <Reveal key={step.title} delay={index * 120}>
-            <div className="hover-lift rounded-2xl border border-border bg-background p-6 shadow-soft hover:shadow-soft-lg">
+            <div className="hover-lift flex flex-col items-center rounded-2xl border border-border bg-background p-6 text-center shadow-soft hover:shadow-soft-lg sm:items-start sm:text-left">
               <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-full gradient-accent text-sm font-semibold text-accent-foreground">
                 {index + 1}
               </div>
@@ -309,7 +309,7 @@ function Pricing() {
             <Reveal key={plan._id} delay={index * 100} className="h-full">
             <div
               className={cn(
-                "hover-lift flex h-full flex-col gap-4 rounded-2xl border bg-background p-6 shadow-soft hover:shadow-soft-lg",
+                "hover-lift flex h-full flex-col items-center gap-4 rounded-2xl border bg-background p-6 text-center shadow-soft hover:shadow-soft-lg sm:items-start sm:text-left",
                 plan.highlighted ? "border-accent ring-2 ring-accent/30" : "border-border"
               )}
             >
@@ -329,7 +329,7 @@ function Pricing() {
                   /{plan.billingPeriod === "monthly" ? "mes" : "año"}
                 </span>
               </p>
-              <ul className="flex flex-col gap-2 text-sm text-primary">
+              <ul className="flex w-full flex-col gap-2 text-left text-sm text-primary">
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-accent" />
                   Hasta {plan.limits.maxLocations} sede(s)
