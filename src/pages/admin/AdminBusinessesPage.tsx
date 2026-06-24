@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from "react";
-import { Plus, Building2 } from "lucide-react";
+import { Plus, Building2, Trash2 } from "lucide-react";
 import {
   useBusinesses,
   useCreateBusiness,
   useSetSubscriptionStatus,
   useChangeSubscriptionPlan,
   useRegisterPayment,
+  useDeleteBusiness,
 } from "../../hooks/admin/useBusinesses";
 import { usePlans, useCreatePlan } from "../../hooks/admin/usePlans";
 import { Modal } from "../../components/ui/Modal";
@@ -14,7 +15,7 @@ import { Button } from "../../components/ui/Button";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { Spinner } from "../../components/ui/Spinner";
 import { cn } from "../../lib/utils";
-import type { SubscriptionStatus } from "../../api/types";
+import type { Business, SubscriptionStatus } from "../../api/types";
 
 const statusLabels: Record<SubscriptionStatus, string> = {
   trial: "Prueba",
@@ -40,12 +41,15 @@ export function AdminBusinessesPage() {
   const setStatus = useSetSubscriptionStatus();
   const changePlan = useChangeSubscriptionPlan();
   const registerPayment = useRegisterPayment();
+  const deleteBusiness = useDeleteBusiness();
 
   const [openBusiness, setOpenBusiness] = useState(false);
   const [openPlan, setOpenPlan] = useState(false);
   const [paymentBusinessId, setPaymentBusinessId] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
+  const [businessToDelete, setBusinessToDelete] = useState<Business | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const [businessName, setBusinessName] = useState("");
@@ -80,6 +84,18 @@ export function AdminBusinessesPage() {
       setPlanId("");
     } catch (err: any) {
       setError(err?.response?.data?.message ?? "No se pudo crear el negocio");
+    }
+  }
+
+  async function handleDeleteBusiness() {
+    if (!businessToDelete) return;
+    setError(null);
+    try {
+      await deleteBusiness.mutateAsync(businessToDelete._id);
+      setBusinessToDelete(null);
+      setDeleteConfirmText("");
+    } catch (err: any) {
+      setError(err?.response?.data?.message ?? "No se pudo eliminar el negocio");
     }
   }
 
@@ -229,6 +245,15 @@ export function AdminBusinessesPage() {
                     </option>
                   ))}
                 </select>
+
+                <Button
+                  variant="danger"
+                  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-sm"
+                  onClick={() => setBusinessToDelete(business)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Eliminar
+                </Button>
               </div>
             )}
           </div>
@@ -312,6 +337,34 @@ export function AdminBusinessesPage() {
             Registrar pago
           </Button>
         </form>
+      </Modal>
+
+      <Modal
+        open={businessToDelete !== null}
+        title="Eliminar negocio"
+        onClose={() => {
+          setBusinessToDelete(null);
+          setDeleteConfirmText("");
+        }}
+      >
+        <p className="mb-3 text-sm text-danger">
+          Esta acción es irreversible. Se eliminarán el negocio <strong>{businessToDelete?.name}</strong>,
+          su suscripción y facturas, citas, clientes, servicios, sedes, barberos, métodos de pago y
+          usuarios asociados.
+        </p>
+        <Field label={`Escribe "${businessToDelete?.name}" para confirmar`}>
+          <Input value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} />
+        </Field>
+        {error && <p className="mb-3 text-sm text-danger">{error}</p>}
+        <Button
+          variant="danger"
+          className="w-full"
+          disabled={deleteConfirmText !== businessToDelete?.name}
+          loading={deleteBusiness.isPending}
+          onClick={handleDeleteBusiness}
+        >
+          Eliminar definitivamente
+        </Button>
       </Modal>
 
       <Modal open={openPlan} title="Nuevo plan" onClose={() => setOpenPlan(false)}>

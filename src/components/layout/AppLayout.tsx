@@ -51,7 +51,10 @@ const barberNavItems: NavItem[] = [
   { to: "/mi-horario", label: "Mi horario", icon: Clock },
 ];
 
-const adminNavItems: NavItem[] = [{ to: "/admin", label: "Negocios", icon: ShieldCheck }];
+const adminNavItems: NavItem[] = [
+  { to: "/admin", label: "Negocios", icon: ShieldCheck },
+  { to: "/admin/pagos", label: "Pagos", icon: CreditCard },
+];
 
 export function AppLayout() {
   const user = useAuthStore((state) => state.user);

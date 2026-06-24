@@ -17,6 +17,7 @@ import { BookingLinkPage } from "./pages/BookingLinkPage";
 import { DepositSettingsPage } from "./pages/DepositSettingsPage";
 import { PublicBookingPage } from "./pages/PublicBookingPage";
 import { AdminBusinessesPage } from "./pages/admin/AdminBusinessesPage";
+import { AdminPaymentsPage } from "./pages/admin/AdminPaymentsPage";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ export default function App() {
           <Route element={<ProtectedRoute allowedRoles={["super_admin"]} />}>
             <Route element={<AppLayout />}>
               <Route path="/admin" element={<AdminBusinessesPage />} />
+              <Route path="/admin/pagos" element={<AdminPaymentsPage />} />
             </Route>
           </Route>
         </Routes>

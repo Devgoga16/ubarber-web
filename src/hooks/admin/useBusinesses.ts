@@ -42,6 +42,15 @@ export function useChangeSubscriptionPlan() {
   });
 }
 
+export function useDeleteBusiness() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (businessId: string) =>
+      (await apiClient.delete(`/admin/businesses/${businessId}`)).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "businesses"] }),
+  });
+}
+
 export function useRegisterPayment() {
   const queryClient = useQueryClient();
   return useMutation({

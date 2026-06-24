@@ -130,3 +130,17 @@ export interface Business {
   phone?: string;
   subscription: Subscription | null;
 }
+
+export type InvoiceStatus = "pending" | "overdue" | "paid" | "cancelled";
+
+export interface Invoice {
+  _id: string;
+  businessId: { _id: string; name: string; ownerName: string; ownerEmail: string } | string;
+  subscriptionId: string;
+  planId: { _id: string; name: string; priceCents: number; billingPeriod: "monthly" | "yearly" } | string;
+  amountCents: number;
+  issuedAt: string;
+  dueDate: string;
+  status: InvoiceStatus;
+  paidAt?: string;
+}
