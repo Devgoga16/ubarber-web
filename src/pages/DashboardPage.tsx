@@ -35,7 +35,7 @@ export function DashboardPage() {
         title={`¡Hola, ${user?.name?.split(" ")[0] ?? ""}! 👋`}
         description="Bienvenido al panel de control de tu barbería."
         action={
-          <Link to="/">
+          <Link to="/agenda">
             <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Nueva cita
@@ -76,7 +76,7 @@ export function DashboardPage() {
           <div className="rounded-2xl border border-border bg-background shadow-soft p-4">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-heading font-semibold text-primary">Citas recientes</h2>
-              <Link to="/" className="text-sm font-medium text-accent">
+              <Link to="/agenda" className="text-sm font-medium text-accent">
                 Ver todas
               </Link>
             </div>

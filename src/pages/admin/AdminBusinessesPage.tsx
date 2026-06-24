@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { Plus, Building2, Trash2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Plus, Building2, Trash2, Settings } from "lucide-react";
 import {
   useBusinesses,
   useCreateBusiness,
@@ -8,7 +9,7 @@ import {
   useRegisterPayment,
   useDeleteBusiness,
 } from "../../hooks/admin/useBusinesses";
-import { usePlans, useCreatePlan } from "../../hooks/admin/usePlans";
+import { usePlans } from "../../hooks/admin/usePlans";
 import { Modal } from "../../components/ui/Modal";
 import { Field, Input } from "../../components/ui/Field";
 import { Button } from "../../components/ui/Button";
@@ -37,14 +38,12 @@ export function AdminBusinessesPage() {
   const { data: businesses, isLoading } = useBusinesses();
   const { data: plans } = usePlans();
   const createBusiness = useCreateBusiness();
-  const createPlan = useCreatePlan();
   const setStatus = useSetSubscriptionStatus();
   const changePlan = useChangeSubscriptionPlan();
   const registerPayment = useRegisterPayment();
   const deleteBusiness = useDeleteBusiness();
 
   const [openBusiness, setOpenBusiness] = useState(false);
-  const [openPlan, setOpenPlan] = useState(false);
   const [paymentBusinessId, setPaymentBusinessId] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
@@ -57,13 +56,6 @@ export function AdminBusinessesPage() {
   const [ownerEmail, setOwnerEmail] = useState("");
   const [ownerPassword, setOwnerPassword] = useState("");
   const [planId, setPlanId] = useState("");
-
-  const [planName, setPlanName] = useState("");
-  const [planPrice, setPlanPrice] = useState("");
-  const [planPeriod, setPlanPeriod] = useState<"monthly" | "yearly">("monthly");
-  const [maxLocations, setMaxLocations] = useState("1");
-  const [maxBarbers, setMaxBarbers] = useState("5");
-  const [maxAppointments, setMaxAppointments] = useState("500");
 
   async function handleCreateBusiness(event: FormEvent) {
     event.preventDefault();
@@ -99,29 +91,6 @@ export function AdminBusinessesPage() {
     }
   }
 
-  async function handleCreatePlan(event: FormEvent) {
-    event.preventDefault();
-    setError(null);
-    try {
-      await createPlan.mutateAsync({
-        name: planName,
-        priceCents: Math.round(Number(planPrice) * 100),
-        billingPeriod: planPeriod,
-        limits: {
-          maxLocations: Number(maxLocations),
-          maxBarbers: Number(maxBarbers),
-          maxAppointmentsPerMonth: Number(maxAppointments),
-        },
-        features: [],
-      });
-      setOpenPlan(false);
-      setPlanName("");
-      setPlanPrice("");
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? "No se pudo crear el plan");
-    }
-  }
-
   async function handleRegisterPayment(event: FormEvent) {
     event.preventDefault();
     if (!paymentBusinessId) return;
@@ -147,9 +116,12 @@ export function AdminBusinessesPage() {
         description="Planes, suscripciones y clientes del SaaS."
         action={
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => setOpenPlan(true)}>
-              Nuevo plan
-            </Button>
+            <Link to="/admin/planes">
+              <Button variant="secondary" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Gestionar planes
+              </Button>
+            </Link>
             <Button onClick={() => setOpenBusiness(true)} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Nuevo negocio
@@ -365,65 +337,6 @@ export function AdminBusinessesPage() {
         >
           Eliminar definitivamente
         </Button>
-      </Modal>
-
-      <Modal open={openPlan} title="Nuevo plan" onClose={() => setOpenPlan(false)}>
-        <form onSubmit={handleCreatePlan}>
-          <Field label="Nombre">
-            <Input value={planName} onChange={(e) => setPlanName(e.target.value)} required />
-          </Field>
-          <Field label="Precio">
-            <Input
-              type="number"
-              min={0}
-              step="0.01"
-              value={planPrice}
-              onChange={(e) => setPlanPrice(e.target.value)}
-              required
-            />
-          </Field>
-          <Field label="Periodicidad">
-            <select
-              value={planPeriod}
-              onChange={(e) => setPlanPeriod(e.target.value as "monthly" | "yearly")}
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-base text-primary"
-            >
-              <option value="monthly">Mensual</option>
-              <option value="yearly">Anual</option>
-            </select>
-          </Field>
-          <Field label="Máx. sedes">
-            <Input
-              type="number"
-              min={1}
-              value={maxLocations}
-              onChange={(e) => setMaxLocations(e.target.value)}
-              required
-            />
-          </Field>
-          <Field label="Máx. barberos">
-            <Input
-              type="number"
-              min={1}
-              value={maxBarbers}
-              onChange={(e) => setMaxBarbers(e.target.value)}
-              required
-            />
-          </Field>
-          <Field label="Máx. citas / mes">
-            <Input
-              type="number"
-              min={1}
-              value={maxAppointments}
-              onChange={(e) => setMaxAppointments(e.target.value)}
-              required
-            />
-          </Field>
-          {error && <p className="mb-3 text-sm text-danger">{error}</p>}
-          <Button type="submit" loading={createPlan.isPending} className="w-full">
-            Crear plan
-          </Button>
-        </form>
       </Modal>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageCircle, CheckCircle2, Power } from "lucide-react";
+import { MessageCircle, CheckCircle2, Power, Lock } from "lucide-react";
 import { useWhatsAppStatus, useConnectWhatsApp, useDisconnectWhatsApp } from "../hooks/useWhatsApp";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Button } from "../components/ui/Button";
@@ -13,6 +13,7 @@ export function WhatsAppPage() {
   const [confirmingDisconnect, setConfirmingDisconnect] = useState(false);
 
   const status = data?.status ?? "disconnected";
+  const planAllowsWhatsApp = data?.planAllowsWhatsApp ?? true;
 
   async function handleDisconnect() {
     await disconnect.mutateAsync();
@@ -33,7 +34,22 @@ export function WhatsAppPage() {
           </div>
         )}
 
-        {!isLoading && status === "connected" && (
+        {!isLoading && !planAllowsWhatsApp && (
+          <>
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted/15">
+              <Lock className="h-7 w-7 text-muted-foreground" />
+            </div>
+            <h2 className="font-heading mb-1 text-lg font-semibold text-primary">
+              No disponible en tu plan
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              La integración de WhatsApp (recordatorios y confirmaciones automáticas) no está
+              incluida en tu plan actual. Habla con nosotros para actualizarlo.
+            </p>
+          </>
+        )}
+
+        {!isLoading && planAllowsWhatsApp && status === "connected" && (
           <>
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-success/15">
               <CheckCircle2 className="h-7 w-7 text-success" />
@@ -57,7 +73,7 @@ export function WhatsAppPage() {
           </>
         )}
 
-        {!isLoading && status !== "connected" && (
+        {!isLoading && planAllowsWhatsApp && status !== "connected" && (
           <>
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent/15">
               <MessageCircle className="h-7 w-7 text-accent" />

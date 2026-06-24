@@ -40,10 +40,8 @@ export function BarberConfirmationPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface px-4">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-background p-6 shadow-soft-lg sm:p-8">
-        <div className="mb-5 flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-accent shadow-soft">
-            <Scissors className="h-5 w-5 text-accent-foreground" />
-          </div>
+        <div className="mb-5 flex animate-fade-up items-center gap-2.5">
+          <img src="/logo-mark.png" alt="uBarber" className="h-9 w-9 object-contain" />
           <h1 className="font-heading text-lg font-semibold tracking-tight text-primary">uBarber</h1>
         </div>
 

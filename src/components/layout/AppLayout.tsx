@@ -15,6 +15,7 @@ import {
   MessageCircle,
   Link as LinkIcon,
   ShieldHalf,
+  Settings,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useAuthStore } from "../../store/auth";
@@ -33,7 +34,7 @@ interface NavItem {
 
 const ownerNavItems: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/", label: "Agenda", icon: CalendarDays },
+  { to: "/agenda", label: "Agenda", icon: CalendarDays },
   { to: "/caja", label: "Caja", icon: Wallet },
   { to: "/metodos-de-pago", label: "Métodos de pago", icon: CreditCard, mobile: false },
   { to: "/sedes", label: "Sedes", icon: MapPin },
@@ -47,13 +48,14 @@ const ownerNavItems: NavItem[] = [
 
 // El barbero solo ve su propia agenda y su propio horario — nada de gestión del negocio.
 const barberNavItems: NavItem[] = [
-  { to: "/", label: "Mi agenda", icon: CalendarDays },
+  { to: "/agenda", label: "Mi agenda", icon: CalendarDays },
   { to: "/mi-horario", label: "Mi horario", icon: Clock },
 ];
 
 const adminNavItems: NavItem[] = [
   { to: "/admin", label: "Negocios", icon: ShieldCheck },
   { to: "/admin/pagos", label: "Pagos", icon: CreditCard },
+  { to: "/admin/planes", label: "Planes", icon: Settings },
 ];
 
 export function AppLayout() {
@@ -108,9 +110,7 @@ export function AppLayout() {
     <div className="min-h-screen bg-surface lg:flex">
       <aside className="gradient-primary hidden w-64 flex-col p-4 lg:flex">
         <div className="mb-6 flex items-center gap-2.5 px-2 pt-1">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-accent shadow-soft">
-            <Scissors className="h-5 w-5 text-accent-foreground" />
-          </div>
+          <img src="/logo-mark.png" alt="uBarber" className="h-9 w-9 object-contain" />
           <h1 className="font-heading text-xl font-semibold tracking-tight text-primary-foreground">
             uBarber
           </h1>

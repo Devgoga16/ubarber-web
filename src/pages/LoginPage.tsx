@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { Scissors } from "lucide-react";
 import { apiClient } from "../api/client";
 import { useAuthStore } from "../store/auth";
 import { useSubscriptionGateStore } from "../store/subscriptionGate";
@@ -24,7 +23,7 @@ export function LoginPage() {
       const { data } = await apiClient.post("/auth/login", { email, password });
       clearSubscriptionBlock();
       login(data.token, data.user);
-      navigate("/");
+      navigate(data.user.role === "super_admin" ? "/admin" : "/agenda");
     } catch {
       setError("Credenciales inválidas. Intenta de nuevo.");
     } finally {
@@ -42,13 +41,11 @@ export function LoginPage() {
               "radial-gradient(circle at 15% 20%, rgba(46,125,255,0.35), transparent 45%), radial-gradient(circle at 85% 85%, rgba(242,177,52,0.18), transparent 40%)",
           }}
         />
-        <div className="relative flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-accent shadow-soft">
-            <Scissors className="h-5 w-5 text-accent-foreground" />
-          </div>
+        <div className="relative flex animate-fade-up items-center gap-2.5">
+          <img src="/logo-mark.png" alt="uBarber" className="h-9 w-9 object-contain" />
           <span className="font-heading text-xl font-semibold tracking-tight">uBarber</span>
         </div>
-        <div className="relative">
+        <div className="relative animate-fade-up [animation-delay:0.1s]">
           <div className="mb-4 h-1 w-10 rounded-full bg-gold" />
           <p className="font-heading max-w-sm text-3xl font-medium leading-tight tracking-tight">
             Gestiona tu barbería, todas tus sedes y tu equipo desde un solo lugar.
@@ -69,9 +66,7 @@ export function LoginPage() {
           className="w-full max-w-sm rounded-2xl border border-border bg-background p-6 shadow-soft-lg sm:p-8"
         >
           <div className="mb-6 flex items-center gap-2.5 lg:hidden">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-accent shadow-soft">
-              <Scissors className="h-5 w-5 text-accent-foreground" />
-            </div>
+            <img src="/logo-mark.png" alt="uBarber" className="h-9 w-9 object-contain" />
             <span className="font-heading text-xl font-semibold tracking-tight text-primary">
               uBarber
             </span>

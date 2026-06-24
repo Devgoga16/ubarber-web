@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useAuthStore } from "./store/auth";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 import { AppLayout } from "./components/layout/AppLayout";
 import { LoginPage } from "./pages/LoginPage";
@@ -17,23 +18,34 @@ import { BookingLinkPage } from "./pages/BookingLinkPage";
 import { DepositSettingsPage } from "./pages/DepositSettingsPage";
 import { PublicBookingPage } from "./pages/PublicBookingPage";
 import { BarberConfirmationPage } from "./pages/BarberConfirmationPage";
+import { LandingPage } from "./pages/LandingPage";
 import { AdminBusinessesPage } from "./pages/admin/AdminBusinessesPage";
 import { AdminPaymentsPage } from "./pages/admin/AdminPaymentsPage";
+import { AdminPlansPage } from "./pages/admin/AdminPlansPage";
 
 const queryClient = new QueryClient();
+
+function HomeRoute() {
+  const user = useAuthStore((state) => state.user);
+  if (user) {
+    return <Navigate to={user.role === "super_admin" ? "/admin" : "/agenda"} replace />;
+  }
+  return <LandingPage />;
+}
 
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
+          <Route path="/" element={<HomeRoute />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/reservar/:slug" element={<PublicBookingPage />} />
           <Route path="/confirmar/:token" element={<BarberConfirmationPage />} />
 
           <Route element={<ProtectedRoute allowedRoles={["owner", "manager", "barber"]} />}>
             <Route element={<AppLayout />}>
-              <Route path="/" element={<AppointmentsPage />} />
+              <Route path="/agenda" element={<AppointmentsPage />} />
             </Route>
           </Route>
 
@@ -62,6 +74,7 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route path="/admin" element={<AdminBusinessesPage />} />
               <Route path="/admin/pagos" element={<AdminPaymentsPage />} />
+              <Route path="/admin/planes" element={<AdminPlansPage />} />
             </Route>
           </Route>
         </Routes>

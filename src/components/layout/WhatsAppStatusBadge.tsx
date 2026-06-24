@@ -22,6 +22,10 @@ export function WhatsAppStatusBadge({ dark = true }: { dark?: boolean }) {
   const status = data?.status ?? "disconnected";
   const canManage = role === "owner" || role === "manager";
 
+  if (data && !data.planAllowsWhatsApp) {
+    return null;
+  }
+
   const content = (
     <div
       className={cn(

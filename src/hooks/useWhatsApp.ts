@@ -6,6 +6,7 @@ export type WhatsAppStatus = "disconnected" | "connecting" | "connected";
 export interface WhatsAppStatusResponse {
   status: WhatsAppStatus;
   qr: string | null;
+  planAllowsWhatsApp: boolean;
 }
 
 export function useWhatsAppStatus() {

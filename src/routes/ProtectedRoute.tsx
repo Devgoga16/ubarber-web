@@ -13,7 +13,7 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to={user.role === "super_admin" ? "/admin" : "/"} replace />;
+    return <Navigate to={user.role === "super_admin" ? "/admin" : "/agenda"} replace />;
   }
 
   return <Outlet />;

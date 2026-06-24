@@ -5,6 +5,7 @@ import { Button } from "../../components/ui/Button";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { Spinner } from "../../components/ui/Spinner";
 import { cn } from "../../lib/utils";
+import { formatCurrency } from "../../lib/format";
 import type { InvoiceStatus } from "../../api/types";
 
 const statusLabels: Record<InvoiceStatus, string> = {
@@ -27,10 +28,6 @@ const filterOptions: { label: string; value: InvoiceStatus | undefined }[] = [
   { label: "Vencidas", value: "overdue" },
   { label: "Pagadas", value: "paid" },
 ];
-
-function formatMoney(cents: number) {
-  return (cents / 100).toLocaleString("es", { style: "currency", currency: "USD" });
-}
 
 function daysUntil(dateStr: string): number {
   const diffMs = new Date(dateStr).getTime() - Date.now();
@@ -111,7 +108,7 @@ export function AdminPaymentsPage() {
               </div>
 
               <p className="mt-2 text-sm text-muted-foreground">
-                Plan: {plan?.name ?? "—"} · {formatMoney(invoice.amountCents)} · vence{" "}
+                Plan: {plan?.name ?? "—"} · {formatCurrency(invoice.amountCents)} · vence{" "}
                 {new Date(invoice.dueDate).toLocaleDateString("es")}
                 {invoice.status === "pending" &&
                   (remainingDays >= 0

@@ -91,6 +91,9 @@ export interface Plan {
   limits: { maxLocations: number; maxBarbers: number; maxAppointmentsPerMonth: number };
   features: string[];
   isActive: boolean;
+  highlighted: boolean;
+  sortOrder: number;
+  whatsappEnabled: boolean;
 }
 
 export type SubscriptionStatus = "trial" | "active" | "past_due" | "suspended" | "cancelled";
