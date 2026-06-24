@@ -16,6 +16,7 @@ import { WhatsAppPage } from "./pages/WhatsAppPage";
 import { BookingLinkPage } from "./pages/BookingLinkPage";
 import { DepositSettingsPage } from "./pages/DepositSettingsPage";
 import { PublicBookingPage } from "./pages/PublicBookingPage";
+import { BarberConfirmationPage } from "./pages/BarberConfirmationPage";
 import { AdminBusinessesPage } from "./pages/admin/AdminBusinessesPage";
 import { AdminPaymentsPage } from "./pages/admin/AdminPaymentsPage";
 
@@ -28,6 +29,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/reservar/:slug" element={<PublicBookingPage />} />
+          <Route path="/confirmar/:token" element={<BarberConfirmationPage />} />
 
           <Route element={<ProtectedRoute allowedRoles={["owner", "manager", "barber"]} />}>
             <Route element={<AppLayout />}>
