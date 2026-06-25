@@ -18,6 +18,7 @@ import {
   computeRequiredDepositCents,
 } from "../hooks/usePublicBooking";
 import { ServicePicker } from "../components/agenda/ServicePicker";
+import { BarberPicker } from "../components/agenda/BarberPicker";
 import { Field, Input } from "../components/ui/Field";
 import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
@@ -295,22 +296,14 @@ export function PublicBookingPage() {
               {currentKey === "barbero" && (
                 <>
                   <Field label="Barbero">
-                    <select
-                      value={barberId}
-                      onChange={(e) => {
-                        setBarberId(e.target.value);
+                    <BarberPicker
+                      barbers={barbersForLocation}
+                      selectedId={barberId}
+                      onSelect={(id) => {
+                        setBarberId(id);
                         setTime("");
                       }}
-                      disabled={!locationId}
-                      className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-base text-primary disabled:opacity-50"
-                    >
-                      <option value="">Selecciona un barbero</option>
-                      {barbersForLocation.map((b) => (
-                        <option key={b._id} value={b._id}>
-                          {b.name}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </Field>
 
                   <Field label="Fecha">

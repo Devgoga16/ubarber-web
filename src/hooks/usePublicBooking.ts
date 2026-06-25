@@ -19,11 +19,21 @@ export interface PublicService {
   depositValuePercent?: number;
 }
 
+export interface PublicReview {
+  rating: number;
+  comment?: string;
+  clientName: string;
+}
+
 export interface PublicBarber {
   _id: string;
   name: string;
   locationIds: string[];
   favoriteServiceIds: string[];
+  photo?: string;
+  ratingAverage: number | null;
+  ratingCount: number;
+  recentReviews: PublicReview[];
 }
 
 export interface PublicPaymentMethod {

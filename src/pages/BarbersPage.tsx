@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react";
-import { Plus, Scissors, Pencil, Power } from "lucide-react";
+import { useRef, useState, type FormEvent } from "react";
+import { Plus, Scissors, Pencil, Power, Camera, Star } from "lucide-react";
 import {
   useBarbers,
   useCreateBarber,
@@ -19,6 +19,15 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { CardSkeletons } from "../components/ui/Skeleton";
 import { EmptyState } from "../components/ui/EmptyState";
 import type { Barber } from "../api/types";
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 const emptyCreateForm: CreateBarberInput = {
   name: "",
@@ -45,8 +54,10 @@ export function BarbersPage() {
   const [createForm, setCreateForm] = useState<CreateBarberInput>(emptyCreateForm);
   const [editLocationIds, setEditLocationIds] = useState<string[]>([]);
   const [editPhone, setEditPhone] = useState("");
+  const [editPhoto, setEditPhoto] = useState<string | undefined>(undefined);
   const [statusTarget, setStatusTarget] = useState<Barber | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function openCreate() {
     setEditing(null);
@@ -58,7 +69,14 @@ export function BarbersPage() {
     setEditing(barber);
     setEditLocationIds(barber.locationIds);
     setEditPhone(barber.phone ?? "");
+    setEditPhoto(barber.photo);
     setOpen(true);
+  }
+
+  async function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setEditPhoto(await readFileAsDataUrl(file));
   }
 
   function toggleLocation(id: string) {
@@ -83,6 +101,7 @@ export function BarbersPage() {
           id: editing._id,
           locationIds: editLocationIds,
           phone: editPhone,
+          photo: editPhoto,
         });
       } else {
         await createBarber.mutateAsync(createForm);
@@ -135,8 +154,16 @@ export function BarbersPage() {
             className="rounded-2xl border border-border bg-background shadow-soft p-4 transition-shadow hover:shadow-sm"
           >
             <div className="mb-1 flex items-start justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Scissors className="h-4 w-4 text-accent" />
+              <div className="flex items-center gap-2.5">
+                <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-surface">
+                  {barber.photo ? (
+                    <img src={barber.photo} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Scissors className="h-4 w-4 text-accent/40" />
+                    </div>
+                  )}
+                </div>
                 <h3 className="font-medium text-primary">
                   {typeof barber.userId === "object" ? barber.userId.name : "—"}
                 </h3>
@@ -146,6 +173,13 @@ export function BarbersPage() {
             <p className="text-sm text-muted-foreground">
               {typeof barber.userId === "object" ? barber.userId.email : ""}
             </p>
+            {Boolean(barber.ratingCount) && (
+              <div className="mt-1 flex items-center gap-1 text-sm text-primary">
+                <Star className="h-3.5 w-3.5 fill-gold text-gold" />
+                {barber.ratingAverage?.toFixed(1)}
+                <span className="text-xs text-muted-foreground">({barber.ratingCount})</span>
+              </div>
+            )}
             {barber.specialties.length > 0 && (
               <p className="mt-1 text-sm text-muted-foreground">{barber.specialties.join(", ")}</p>
             )}
@@ -168,6 +202,33 @@ export function BarbersPage() {
 
       <Modal open={open} title={editing ? "Editar barbero" : "Nuevo barbero"} onClose={() => setOpen(false)}>
         <form onSubmit={handleSubmit}>
+          {editing && (
+            <Field label="Foto de perfil (la verán los clientes al reservar)">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoChange}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 py-3 text-sm text-muted-foreground hover:bg-surface"
+              >
+                <Camera className="h-4 w-4" />
+                {editPhoto ? "Cambiar foto" : "Subir foto"}
+              </button>
+              {editPhoto && (
+                <img
+                  src={editPhoto}
+                  alt="Vista previa"
+                  className="mt-2 h-32 w-full rounded-lg border border-border object-cover"
+                />
+              )}
+            </Field>
+          )}
+
           {!editing && (
             <>
               <Field label="Nombre">

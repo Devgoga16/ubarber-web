@@ -35,10 +35,13 @@ export interface Barber {
   userId: { _id: string; name: string; email: string; isActive: boolean } | string;
   locationIds: string[];
   phone?: string;
+  photo?: string;
   specialties: string[];
   commissionPercentage?: number;
   favoriteServiceIds: string[];
   isActive: boolean;
+  ratingAverage?: number | null;
+  ratingCount?: number;
 }
 
 export type AppointmentStatus = "pending" | "in_progress" | "completed" | "cancelled" | "no_show";

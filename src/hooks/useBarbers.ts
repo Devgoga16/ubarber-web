@@ -30,6 +30,7 @@ export function useCreateBarber() {
 
 export interface UpdateBarberInput {
   phone?: string;
+  photo?: string;
   locationIds?: string[];
   specialties?: string[];
   commissionPercentage?: number;
