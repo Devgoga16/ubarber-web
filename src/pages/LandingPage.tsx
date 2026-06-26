@@ -15,6 +15,9 @@ import {
   Percent,
   Star,
   X,
+  Camera,
+  ClipboardCheck,
+  PlayCircle,
 } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
@@ -98,7 +101,7 @@ function Hero() {
           <a href={salesWhatsappUrl} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
             <Button className="hover-lift w-full px-6 py-3 text-base sm:w-auto">Quiero probarlo</Button>
           </a>
-          <a href="#funciones" className="w-full sm:w-auto">
+          <a href="#como-funciona" className="w-full sm:w-auto">
             <Button
               variant="secondary"
               className="hover-lift w-full border-white/20 bg-white/5 px-6 py-3 text-base text-primary-foreground hover:bg-white/10 sm:w-auto"
@@ -244,6 +247,234 @@ function Features() {
             </Reveal>
           ))}
         </div>
+      </div>
+    </section>
+  );
+}
+
+interface TimelineStep {
+  icon: typeof CalendarDays;
+  who: string;
+  title: string;
+  description: string;
+}
+
+const clientFlowSteps: TimelineStep[] = [
+  {
+    icon: Smartphone,
+    who: "Cliente",
+    title: "Abre el link de reservas",
+    description: "Elige sede, servicio y barbero — puede ver su foto, calificación y comentarios de otros clientes.",
+  },
+  {
+    icon: CalendarDays,
+    who: "Cliente",
+    title: "Elige fecha y hora disponible",
+    description: "Solo ve horarios reales según el turno del barbero, sin choques ni dobles citas.",
+  },
+  {
+    icon: Camera,
+    who: "Cliente",
+    title: "Paga el adelanto (si aplica)",
+    description: "Sube el comprobante con el método que usó, o escribe el código de confianza si ya es cliente conocido.",
+  },
+  {
+    icon: CheckCircle2,
+    who: "Negocio",
+    title: "El barbero confirma disponibilidad",
+    description: "Y si subió comprobante, el dueño lo revisa antes de dejar la cita en firme.",
+  },
+  {
+    icon: MessageCircle,
+    who: "Automático",
+    title: "Recibe confirmación y recordatorio",
+    description: "Aviso por WhatsApp en cada paso, y un recordatorio automático 1 hora antes de su cita.",
+  },
+  {
+    icon: Star,
+    who: "Cliente",
+    title: "Califica su atención",
+    description: "Al finalizar, recibe el resumen del pago y un link personal de un solo uso para calificar al barbero.",
+  },
+];
+
+const businessFlowSteps: TimelineStep[] = [
+  {
+    icon: CalendarDays,
+    who: "Cliente o negocio",
+    title: "Se registra la cita",
+    description: "El cliente reserva sola por el link, o el barbero/dueño la agenda directo en la app.",
+  },
+  {
+    icon: CheckCircle2,
+    who: "Barbero",
+    title: "Confirma disponibilidad (si pidió adelanto)",
+    description: "Responde \"SI\" por WhatsApp o lo confirma en la app — sin tener que llamar a nadie.",
+  },
+  {
+    icon: ClipboardCheck,
+    who: "Dueño",
+    title: "Revisa el comprobante (si aplica)",
+    description: "Si el cliente subió foto del adelanto, el dueño la revisa en la app y deja la cita en firme.",
+  },
+  {
+    icon: PlayCircle,
+    who: "Barbero",
+    title: "Brinda el servicio",
+    description: "Marca la cita como \"en atención\" al empezar, y \"finalizada\" al terminar.",
+  },
+  {
+    icon: CreditCard,
+    who: "Barbero",
+    title: "Registra el pago",
+    description: "Elige el método usado y, si quiere, adjunta foto del comprobante final.",
+  },
+  {
+    icon: Star,
+    who: "Automático",
+    title: "El cliente califica el servicio",
+    description: "Le llega por WhatsApp un link personal y de un solo uso para calificar al barbero.",
+  },
+];
+
+const STEP_DURATION_MS = 3200;
+
+function Timeline({ steps }: { steps: TimelineStep[] }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [steps]);
+
+  useEffect(() => {
+    if (paused) return;
+    const id = setInterval(() => {
+      setActiveIndex((i) => (i + 1) % steps.length);
+    }, STEP_DURATION_MS);
+    return () => clearInterval(id);
+  }, [steps, paused]);
+
+  const activeStep = steps[activeIndex];
+
+  return (
+    <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+      {/* Riel horizontal de pasos */}
+      <div className="relative overflow-x-auto pb-2">
+        <div className="relative flex min-w-max items-center gap-0 px-1 sm:min-w-0 sm:justify-between">
+          <div className="absolute left-5 right-5 top-5 h-0.5 bg-border" />
+          <div
+            className="absolute left-5 top-5 h-0.5 bg-accent transition-all duration-500 ease-out"
+            style={{
+              width: steps.length > 1 ? `calc((100% - 2.5rem) * ${activeIndex / (steps.length - 1)})` : 0,
+            }}
+          />
+          {steps.map((step, index) => {
+            const isActive = index === activeIndex;
+            const isDone = index < activeIndex;
+            return (
+              <button
+                key={step.title}
+                onClick={() => setActiveIndex(index)}
+                className="relative z-10 flex w-20 flex-shrink-0 flex-col items-center gap-2 sm:w-auto sm:flex-1"
+              >
+                <span
+                  className={cn(
+                    "flex h-10 w-10 items-center justify-center rounded-full border-2 bg-background shadow-soft transition-all duration-300",
+                    isActive
+                      ? "scale-110 border-accent gradient-accent text-accent-foreground"
+                      : isDone
+                        ? "border-accent text-accent"
+                        : "border-border text-muted-foreground"
+                  )}
+                >
+                  <step.icon className="h-4.5 w-4.5" />
+                </span>
+                <span
+                  className={cn(
+                    "text-center text-[11px] font-medium leading-tight transition-colors",
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  )}
+                >
+                  {index + 1}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Panel con el contenido del paso activo */}
+      <div className="relative mt-8 overflow-hidden rounded-2xl border border-border bg-background p-6 shadow-soft sm:p-8">
+        <span className="pointer-events-none absolute -right-2 -top-6 font-heading text-[90px] font-bold text-accent/5 sm:text-[120px]">
+          {activeIndex + 1}
+        </span>
+        <div key={activeIndex} className="relative animate-fade-up flex flex-col items-center gap-3 text-center">
+          <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-accent">
+            {activeStep.who}
+          </span>
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl gradient-accent shadow-soft">
+            <activeStep.icon className="h-7 w-7 text-accent-foreground" />
+          </div>
+          <p className="font-heading text-lg font-semibold text-primary">{activeStep.title}</p>
+          <p className="max-w-md text-sm text-muted-foreground">{activeStep.description}</p>
+        </div>
+
+        <div className="mx-auto mt-6 flex w-fit gap-1.5">
+          {steps.map((step, index) => (
+            <button
+              key={step.title}
+              onClick={() => setActiveIndex(index)}
+              aria-label={`Ir al paso ${index + 1}`}
+              className={cn(
+                "h-1.5 rounded-full transition-all duration-300",
+                index === activeIndex ? "w-6 bg-accent" : "w-1.5 bg-border"
+              )}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailedHowItWorks() {
+  const [tab, setTab] = useState<"client" | "business">("client");
+
+  return (
+    <section id="como-funciona" className="bg-surface py-16">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6">
+        <Reveal className="mb-8 text-center">
+          <h2 className="font-heading text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+            ¿Cómo funciona uBarber?
+          </h2>
+          <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
+            Mira el paso a paso desde el lado que te interesa.
+          </p>
+        </Reveal>
+
+        <Reveal className="mx-auto mb-10 flex w-fit gap-1 rounded-lg bg-background p-1 shadow-soft">
+          <button
+            onClick={() => setTab("client")}
+            className={cn(
+              "rounded-md px-4 py-2 text-sm font-medium transition-colors",
+              tab === "client" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-primary"
+            )}
+          >
+            Como cliente
+          </button>
+          <button
+            onClick={() => setTab("business")}
+            className={cn(
+              "rounded-md px-4 py-2 text-sm font-medium transition-colors",
+              tab === "business" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-primary"
+            )}
+          >
+            Como negocio
+          </button>
+        </Reveal>
+
+        <Timeline key={tab} steps={tab === "client" ? clientFlowSteps : businessFlowSteps} />
       </div>
     </section>
   );
@@ -416,6 +647,7 @@ export function LandingPage() {
       <NavBar />
       <Hero />
       <Audiences />
+      <DetailedHowItWorks />
       <Features />
       <HowItWorks />
       <Pricing />

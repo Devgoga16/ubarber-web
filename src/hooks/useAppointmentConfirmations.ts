@@ -2,12 +2,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../api/client";
 import type { Appointment } from "../api/types";
 
-export function usePendingConfirmations() {
+export function usePendingConfirmations(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ["appointments", "pending-confirmation"],
     queryFn: async () =>
       (await apiClient.get<Appointment[]>("/business/appointments/pending-confirmation")).data,
     refetchInterval: 15000,
+    enabled: options.enabled ?? true,
   });
 }
 

@@ -20,6 +20,7 @@ import {
 import { cn } from "../../lib/utils";
 import { useAuthStore } from "../../store/auth";
 import { useSubscriptionGateStore } from "../../store/subscriptionGate";
+import { usePendingConfirmations } from "../../hooks/useAppointmentConfirmations";
 import { PlanCard } from "./PlanCard";
 import { LocationSwitcher } from "./LocationSwitcher";
 import { WhatsAppStatusBadge } from "./WhatsAppStatusBadge";
@@ -71,6 +72,11 @@ export function AppLayout() {
       : user?.role === "barber"
         ? barberNavItems
         : ownerNavItems;
+
+  // Citas esperando que el barbero confirme disponibilidad, o (owner/manager) un comprobante de adelanto.
+  const canSeePending = user?.role === "owner" || user?.role === "manager" || user?.role === "barber";
+  const { data: pendingConfirmations } = usePendingConfirmations({ enabled: canSeePending }); // hook ya filtra por rol en el backend
+  const pendingCount = canSeePending ? pendingConfirmations?.length ?? 0 : 0;
 
   if (subscriptionBlocked && user?.role !== "super_admin") {
     return (
@@ -136,6 +142,11 @@ export function AppLayout() {
                   )}
                   <item.icon className="h-5 w-5" />
                   {item.label}
+                  {item.to === "/agenda" && pendingCount > 0 && (
+                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-[11px] font-semibold text-white">
+                      {pendingCount}
+                    </span>
+                  )}
                 </>
               )}
             </NavLink>
@@ -197,12 +208,19 @@ export function AppLayout() {
               end
               className={({ isActive }) =>
                 cn(
-                  "flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-medium text-muted-foreground",
+                  "relative flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-medium text-muted-foreground",
                   isActive && "text-accent"
                 )
               }
             >
-              <item.icon className="h-5 w-5" />
+              <span className="relative">
+                <item.icon className="h-5 w-5" />
+                {item.to === "/agenda" && pendingCount > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-white">
+                    {pendingCount}
+                  </span>
+                )}
+              </span>
               {item.label}
             </NavLink>
           ))}
